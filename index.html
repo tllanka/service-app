@@ -203,7 +203,6 @@ h4,h5,.stat-value,.reb,.keypad-btn{font-family:'Rajdhani',sans-serif;}
   </div>
   <div class="d-grid gap-3 mb-3">
     <button class="reb py-4" onclick="navTo('s-scan');setTimeout(()=>startScanner('choice'),350);"><i class="fas fa-qrcode me-2"></i>QR SCANNER</button>
-    <button class="reb-grn py-3" onclick="startStampScan()"><i class="fas fa-calendar-check me-2"></i>STAMPING — QR SCAN</button>
     <div class="row g-3">
       <div class="col-6"><button class="qb" onclick="navTo('s-reg')"><span class="qi">👤</span>Register</button></div>
       <div class="col-6"><button class="qb" onclick="navTo('s-list');loadDir();"><span class="qi">📋</span>Directory</button></div>
@@ -217,13 +216,6 @@ h4,h5,.stat-value,.reb,.keypad-btn{font-family:'Rajdhani',sans-serif;}
   <button class="day-btn mb-3" onclick="generateDailySummary()">
     <i class="fas fa-calendar-day me-2"></i>📤 DAILY SUMMARY — SEND TODAY'S REPORT
   </button>
-  <div class="mc" style="padding:14px;">
-    <small class="fw-bold text-muted text-uppercase" style="font-size:10px;letter-spacing:1px;">⚙️ System Tools</small>
-    <div class="d-flex gap-2 mt-2">
-      <button class="rebl" style="font-size:12px;" onclick="exportDatabase()"><i class="fas fa-file-export me-1"></i>Backup</button>
-      <button class="rebl" style="font-size:12px;" onclick="importDatabase()"><i class="fas fa-file-import me-1"></i>Restore</button>
-    </div>
-  </div>
 </div>
 
 <!-- ══ 2. REGISTER ══ -->
@@ -351,30 +343,55 @@ h4,h5,.stat-value,.reb,.keypad-btn{font-family:'Rajdhani',sans-serif;}
 <div id="s-stamp" class="section">
   <div class="mc">
     <div class="d-flex justify-content-between align-items-center mb-3">
-      <h6 class="fw-bold mb-0" style="color:var(--p);letter-spacing:1px;">📅 STAMP ENTRY</h6>
-      <span id="stamp-cust-name" style="font-family:'Rajdhani',sans-serif;font-size:13px;color:#0a6b7a;font-weight:700;"></span>
-    </div>
-    <div class="mb-3" style="background:linear-gradient(135deg,rgba(6,76,87,.06),rgba(10,107,122,.04));border-radius:12px;padding:12px;">
-      <div style="font-size:12px;color:#64748b;font-weight:700;" id="stamp-cust-info"></div>
+      <h6 class="fw-bold mb-0" style="color:var(--p);letter-spacing:1px;">📅 STAMP PAGE</h6>
+      <span id="stamp-day-badge" style="font-size:10px;background:#064C57;color:white;border-radius:20px;padding:4px 10px;font-weight:800;"></span>
     </div>
 
-    <!-- Select All -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <span class="fl mb-0">⚖️ Select Scales to Stamp</span>
-      <div class="d-flex gap-2">
-        <button style="background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;" onclick="stampSelectAll(true)">✅ All</button>
-        <button style="background:var(--bg);color:var(--p);border:none;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;box-shadow:2px 2px 5px var(--sd),-2px -2px 5px var(--sl);" onclick="stampSelectAll(false)">☐ None</button>
+    <div class="fg">
+      <span class="fl">👮 Stamp Officer Name</span>
+      <select id="stamp-officer" class="fs" onchange="lockStampOfficerForDay()"></select>
+      <small id="stamp-officer-lock" style="font-size:10px;color:#64748b;font-weight:700;display:block;margin-top:5px;"></small>
+    </div>
+    <div class="row g-2">
+      <div class="col-6 fg"><span class="fl">👥 Team Leader</span><select id="stamp-leader" class="fs"></select></div>
+      <div class="col-6 fg"><span class="fl">👤 Member</span><select id="stamp-member" class="fs"></select></div>
+    </div>
+
+    <button class="reb w-100 py-3 mb-3" onclick="startStampScanFromPage()"><i class="fas fa-qrcode me-2"></i>SCAN CUSTOMER QR FOR STAMP</button>
+
+    <div id="stamp-active-customer" style="display:none;">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold mb-0" style="color:var(--p);letter-spacing:1px;">⚖️ SELECT SCALES</h6>
+        <span id="stamp-cust-name" style="font-family:'Rajdhani',sans-serif;font-size:13px;color:#0a6b7a;font-weight:700;"></span>
+      </div>
+      <div class="mb-3" style="background:linear-gradient(135deg,rgba(6,76,87,.06),rgba(10,107,122,.04));border-radius:12px;padding:12px;">
+        <div style="font-size:12px;color:#64748b;font-weight:700;" id="stamp-cust-info"></div>
+      </div>
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <span class="fl mb-0">⚖️ Select Scales to Stamp</span>
+        <div class="d-flex gap-2">
+          <button style="background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;" onclick="stampSelectAll(true)">✅ All</button>
+          <button style="background:var(--bg);color:var(--p);border:none;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;box-shadow:2px 2px 5px var(--sd),-2px -2px 5px var(--sl);" onclick="stampSelectAll(false)">☐ None</button>
+        </div>
+      </div>
+      <div id="stamp-scales-list"></div>
+      <div class="fg mt-3" id="stamp-note-wrap" style="display:none;">
+        <span class="fl">📝 UN STAMP REASON / NOTE</span>
+        <textarea id="stamp-note" class="fc" rows="3" placeholder="Un stamp වුණු scale සඳහා හේතුව ලියන්න..."></textarea>
+      </div>
+      <div class="row g-2 mt-2">
+        <div class="col-6"><button class="reb-grn w-100 py-3" onclick="saveStamp()"><i class="fas fa-check-circle me-2"></i>OK</button></div>
+        <div class="col-6"><button class="reb-acc w-100 py-3" onclick="cancelStamp()"><i class="fas fa-times me-2"></i>CANCEL</button></div>
       </div>
     </div>
-    <div id="stamp-scales-list"></div>
-    <div class="fg mt-3" id="stamp-note-wrap" style="display:none;">
-      <span class="fl">📝 UN STAMP REASON / NOTE</span>
-      <textarea id="stamp-note" class="fc" rows="3" placeholder="Un stamp වුණු scale සඳහා හේතුව ලියන්න..."></textarea>
+  </div>
+  <div class="mc">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="fl mb-0">📋 Today's Stamp Session</span>
+      <span id="stamp-session-count" style="font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:800;color:#064C57;">0</span>
     </div>
-    <div class="row g-2 mt-2">
-      <div class="col-6"><button class="reb-grn w-100 py-3" onclick="saveStamp()"><i class="fas fa-check-circle me-2"></i>OK</button></div>
-      <div class="col-6"><button class="reb-acc w-100 py-3" onclick="cancelStamp()"><i class="fas fa-times me-2"></i>CANCEL</button></div>
-    </div>
+    <div id="stamp-session-list" style="max-height:220px;overflow-y:auto;"></div>
+    <button class="day-btn mt-3" onclick="finishStampDay()"><i class="fas fa-file-excel me-2"></i>STAMP FINISH — EXCEL REPORT</button>
   </div>
 </div>
 
@@ -415,11 +432,23 @@ h4,h5,.stat-value,.reb,.keypad-btn{font-family:'Rajdhani',sans-serif;}
   <div id="adm-content" style="display:none;">
     <div class="mc">
       <h6 class="fw-bold mb-4" style="color:var(--p);letter-spacing:1px;">⚙️ ADMIN SETTINGS</h6>
-      <div class="fg"><span class="fl">📧 Invoice Email Recipient</span><input type="email" id="adm-email" class="fc" placeholder="admin@example.com"></div>
+      <div class="fg"><span class="fl">📧 Report / Invoice Email Recipient</span><input type="email" id="adm-email" class="fc" placeholder="admin@example.com"></div>
       <div class="fg"><span class="fl">🏢 Company Name</span><input type="text" id="adm-company" class="fc" placeholder="Ceylon Weighing Machine Limited"></div>
       <div class="fg"><span class="fl">📞 Company Phone</span><input type="text" id="adm-cphone" class="fc" placeholder="+94 XX XXX XXXX"></div>
+      <div class="fg"><span class="fl">👮 Stamp Officers</span><textarea id="adm-officers" class="fc" rows="3" placeholder="One officer per line"></textarea></div>
+      <div class="fg"><span class="fl">👥 Team Leaders</span><textarea id="adm-leaders" class="fc" rows="3" placeholder="One team leader per line"></textarea></div>
+      <div class="fg"><span class="fl">👤 Team Members</span><textarea id="adm-members" class="fc" rows="3" placeholder="One member per line"></textarea></div>
       <button class="reb w-100 py-3 mb-3" onclick="saveAdmSettings()"><i class="fas fa-save me-2"></i>SAVE SETTINGS</button>
       <hr style="border-color:rgba(0,0,0,.1);">
+      <div class="mc" style="padding:14px;margin-bottom:12px;background:rgba(6,76,87,.04);">
+        <small class="fw-bold text-muted text-uppercase" style="font-size:10px;letter-spacing:1px;">⚙️ System Tools / Auto Backup</small>
+        <div class="d-grid gap-2 mt-2">
+          <button class="rebl" style="font-size:12px;" onclick="selectBackupFolder()"><i class="fas fa-folder-open me-1"></i>Select Auto Backup Folder</button>
+          <button class="rebl" style="font-size:12px;" onclick="exportDatabase()"><i class="fas fa-file-export me-1"></i>Backup Now</button>
+          <button class="rebl" style="font-size:12px;" onclick="importDatabase()"><i class="fas fa-file-import me-1"></i>Restore</button>
+        </div>
+        <small id="backup-status" style="font-size:10px;color:#64748b;font-weight:700;display:block;margin-top:8px;"></small>
+      </div>
       <button class="reb-acc w-100 py-2 mt-2" onclick="lockAdm()"><i class="fas fa-lock me-2"></i>Lock Panel</button>
     </div>
   </div>
@@ -430,7 +459,7 @@ h4,h5,.stat-value,.reb,.keypad-btn{font-family:'Rajdhani',sans-serif;}
 <!-- Bottom Nav -->
 <nav class="bnav">
   <button class="ni active" id="n-home" onclick="navTo('s-home')"><i class="fas fa-home"></i><span>Home</span></button>
-  <button class="ni" id="n-scan" onclick="navTo('s-scan');setTimeout(()=>startScanner('choice'),350);"><i class="fas fa-qrcode"></i><span>Scan</span></button>
+  <button class="ni" id="n-stamp" onclick="openStampMainPage()"><i class="fas fa-stamp"></i><span>Stamp</span></button>
   <button class="ni" id="n-reg" onclick="navTo('s-reg')"><i class="fas fa-user-plus"></i><span>Register</span></button>
   <button class="ni" id="n-list" onclick="navTo('s-list');loadDir();"><i class="fas fa-address-book"></i><span>List</span></button>
   <button class="ni" id="n-rpt" onclick="navTo('s-reports')"><i class="fas fa-chart-bar"></i><span>Reports</span></button>
@@ -481,11 +510,17 @@ db.version(3).stores({
   logs:      '++id, cust_id, cust_name, date, amount, type, notes, stamp_scales',
   invoices:  '++id, inv_no, cust_id, cust_name, date, amount, model, serial, weight, notes, phone, nic, addr1, addr2'
 });
+db.version(4).stores({
+  customers: '++id, qr_id, name, phone, nic, addr1, addr2, gps, scales',
+  logs:      '++id, cust_id, cust_name, date, amount, type, notes, stamp_scales, officer, leader, member, area, status',
+  invoices:  '++id, inv_no, cust_id, cust_name, date, amount, model, serial, weight, notes, phone, nic, addr1, addr2'
+});
 
 let gps="", html5QrCode=null, scanning=false;
 let kpTgt=null, kpVal="", kpMode="phone", scanMode="choice";
 let curInv=null;
 let stampCust=null, stampChecks={};
+let stampSessionStarted=false;
 
 // ════ CLOCK ════
 (function tick(){
@@ -496,7 +531,7 @@ let stampCust=null, stampChecks={};
 })();
 
 // ════ NAV ════
-const NM={'s-home':'n-home','s-scan':'n-scan','s-reg':'n-reg','s-list':'n-list','s-reports':'n-rpt'};
+const NM={'s-home':'n-home','s-stamp':'n-stamp','s-reg':'n-reg','s-list':'n-list','s-reports':'n-rpt'};
 function navTo(id){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -742,7 +777,9 @@ async function handleScan(qrid){
   if(scanMode==='stamp'){openStampPage(cust);return;}
   showChoiceModal(cust);
 }
-function startStampScan(){
+function startStampScan(){startStampScanFromPage();}
+function startStampScanFromPage(){
+  if(!ensureStampHeaderSelected()) return;
   scanMode='stamp';
   navTo('s-scan');
   setTimeout(()=>startScanner('stamp'),350);
@@ -799,8 +836,72 @@ function openServicePage(cust){
 }
 
 // ════ STAMP PAGE ════
+function getTodayKey(){return new Date().toISOString().slice(0,10);}
+function listFromStorage(key){return (localStorage.getItem(key)||'').split(/\n|,/).map(x=>x.trim()).filter(Boolean);}
+function fillSelect(id, arr, placeholder){
+  const el=document.getElementById(id); if(!el) return;
+  const opts=['<option value="">'+placeholder+'</option>'].concat(arr.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`));
+  el.innerHTML=opts.join('');
+}
+function esc(v){return String(v||'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+function openStampMainPage(){
+  navTo('s-stamp');
+  document.getElementById('stamp-active-customer').style.display='none';
+  loadStampAdminLists();
+  loadStampOfficerLock();
+  refreshStampSessionList();
+}
+function loadStampAdminLists(){
+  fillSelect('stamp-officer', listFromStorage('tlpos_stamp_officers'), 'Select officer');
+  fillSelect('stamp-leader', listFromStorage('tlpos_stamp_leaders'), 'Select leader');
+  fillSelect('stamp-member', listFromStorage('tlpos_stamp_members'), 'Select member');
+  document.getElementById('stamp-day-badge').innerText=getTodayKey();
+}
+function loadStampOfficerLock(){
+  const today=getTodayKey();
+  const lockDate=localStorage.getItem('tlpos_stamp_officer_date');
+  const officer=localStorage.getItem('tlpos_stamp_officer_name')||'';
+  const sel=document.getElementById('stamp-officer');
+  const note=document.getElementById('stamp-officer-lock');
+  if(lockDate===today && officer){
+    if([...sel.options].every(o=>o.value!==officer)) sel.add(new Option(officer,officer));
+    sel.value=officer; sel.disabled=true;
+    note.innerText='🔒 Today officer locked until Stamp Finish.';
+  }else{
+    sel.disabled=false; sel.value=''; note.innerText='දවසේ මුලින්ම officer select කළාම Stamp Finish වන තෙක් lock වේ.';
+  }
+}
+function lockStampOfficerForDay(){
+  const sel=document.getElementById('stamp-officer');
+  if(!sel.value) return;
+  const today=getTodayKey();
+  const oldDate=localStorage.getItem('tlpos_stamp_officer_date');
+  const oldName=localStorage.getItem('tlpos_stamp_officer_name');
+  if(oldDate===today && oldName && oldName!==sel.value){
+    sel.value=oldName; sel.disabled=true;
+    return Swal.fire('Officer Locked','දවස අවසන් වන තුරු officer name වෙනස් කරන්න බැහැ.','warning');
+  }
+  localStorage.setItem('tlpos_stamp_officer_date',today);
+  localStorage.setItem('tlpos_stamp_officer_name',sel.value);
+  sel.disabled=true;
+  document.getElementById('stamp-officer-lock').innerText='🔒 Today officer locked until Stamp Finish.';
+  autoBackupNow('officer-lock');
+}
+function ensureStampHeaderSelected(){
+  const officer=document.getElementById('stamp-officer').value;
+  const leader=document.getElementById('stamp-leader').value;
+  const member=document.getElementById('stamp-member').value;
+  if(!officer) return Swal.fire('Officer Required','Stamp officer name select කරන්න.','warning'),false;
+  lockStampOfficerForDay();
+  if(!leader) return Swal.fire('Team Leader Required','Team leader name select කරන්න.','warning'),false;
+  if(!member) return Swal.fire('Member Required','Member name select කරන්න.','warning'),false;
+  return true;
+}
 function openStampPage(cust){
   stampCust=cust; stampChecks={};
+  navTo('s-stamp');
+  loadStampAdminLists(); loadStampOfficerLock(); refreshStampSessionList();
+  document.getElementById('stamp-active-customer').style.display='block';
   document.getElementById('stamp-cust-name').innerText=cust.name;
   document.getElementById('stamp-cust-info').innerHTML=
     `📞 ${cust.phone||'-'}${cust.nic?' &nbsp;|&nbsp; 🪪 '+cust.nic:''}${(cust.addr1||cust.addr2)?'<br>📍 '+(cust.addr1?cust.addr1+', ':'')+(cust.addr2||''):''}`;
@@ -809,87 +910,105 @@ function openStampPage(cust){
   const list=document.getElementById('stamp-scales-list');
   if(!scales.length){
     list.innerHTML='<div class="text-center text-muted py-3" style="font-size:13px;">No scales registered for this customer.</div>';
-    stampChecks['all']=true;
-    updateStampNoteBox();
-    navTo('s-stamp');return;
+    updateStampNoteBox(); return;
   }
   scales.forEach((s,i)=>{stampChecks[i]=true;});
   list.innerHTML=scales.map((s,i)=>`
     <div class="stamp-scale-item stamped" id="ssi-${i}" onclick="toggleStampCheck(${i})">
       <div class="stamp-check checked" id="sc-${i}"><i class="fas fa-check" style="font-size:13px;"></i></div>
       <div class="stamp-scale-info">
-        <div class="sm">${s.model||'Scale '+(i+1)} <span id="st-badge-${i}" style="float:right;font-size:10px;background:#10b981;color:white;border-radius:20px;padding:2px 8px;">STAMP</span></div>
-        <div class="ss">Serial: ${s.serial||'-'} &nbsp;|&nbsp; ${s.weight||'-'}</div>
+        <div class="sm">${esc(s.model||'Scale '+(i+1))} <span id="st-badge-${i}" style="float:right;font-size:10px;background:#10b981;color:white;border-radius:20px;padding:2px 8px;">STAMP</span></div>
+        <div class="ss">Serial: ${esc(s.serial||'-')} &nbsp;|&nbsp; ${esc(s.weight||'-')}</div>
       </div>
     </div>`).join('');
   updateStampNoteBox();
-  navTo('s-stamp');
 }
-
 function setStampVisual(i,checked){
-  const item=document.getElementById('ssi-'+i);
-  const chk=document.getElementById('sc-'+i);
-  const badge=document.getElementById('st-badge-'+i);
+  const item=document.getElementById('ssi-'+i), chk=document.getElementById('sc-'+i), badge=document.getElementById('st-badge-'+i);
   if(!item||!chk) return;
-  if(checked){
-    item.className='stamp-scale-item stamped';
-    chk.className='stamp-check checked';chk.innerHTML='<i class="fas fa-check" style="font-size:13px;"></i>';
-    if(badge){badge.innerText='STAMP';badge.style.background='#10b981';}
-  } else {
-    item.className='stamp-scale-item unstamped';
-    chk.className='stamp-check';chk.innerHTML='';
-    if(badge){badge.innerText='UN STAMP';badge.style.background='#dc2626';}
-  }
+  if(checked){item.className='stamp-scale-item stamped'; chk.className='stamp-check checked'; chk.innerHTML='<i class="fas fa-check" style="font-size:13px;"></i>'; if(badge){badge.innerText='STAMP';badge.style.background='#10b981';}}
+  else{item.className='stamp-scale-item unstamped'; chk.className='stamp-check'; chk.innerHTML=''; if(badge){badge.innerText='UN STAMP';badge.style.background='#dc2626';}}
 }
-function hasUnstamped(){
-  if(!stampCust) return false;
-  return (stampCust.scales||[]).some((_,i)=>!stampChecks[i]);
-}
-function updateStampNoteBox(){
-  const wrap=document.getElementById('stamp-note-wrap');
-  if(wrap) wrap.style.display=hasUnstamped()?'block':'none';
-}
-function toggleStampCheck(i){
-  stampChecks[i]=!stampChecks[i];
-  setStampVisual(i,stampChecks[i]);
-  updateStampNoteBox();
-}
-function stampSelectAll(v){
-  if(!stampCust) return;
-  const scales=stampCust.scales||[];
-  scales.forEach((_,i)=>{stampChecks[i]=v;setStampVisual(i,v);});
-  updateStampNoteBox();
-}
-function cancelStamp(){
-  stampCust=null; stampChecks={}; scanMode='choice';
-  navTo('s-home');
-}
+function hasUnstamped(){return !!stampCust && (stampCust.scales||[]).some((_,i)=>!stampChecks[i]);}
+function updateStampNoteBox(){const wrap=document.getElementById('stamp-note-wrap'); if(wrap) wrap.style.display=hasUnstamped()?'block':'none';}
+function toggleStampCheck(i){stampChecks[i]=!stampChecks[i]; setStampVisual(i,stampChecks[i]); updateStampNoteBox();}
+function stampSelectAll(v){if(!stampCust)return; (stampCust.scales||[]).forEach((_,i)=>{stampChecks[i]=v;setStampVisual(i,v);}); updateStampNoteBox();}
+function cancelStamp(){stampCust=null; stampChecks={}; scanMode='choice'; document.getElementById('stamp-active-customer').style.display='none';}
 async function saveStamp(){
   if(!stampCust) return;
+  if(!ensureStampHeaderSelected()) return;
   const scales=stampCust.scales||[];
-  let stampedScales=[],unstampedScales=[];
-  if(scales.length===0){stampedScales=['General Stamp'];}
-  else{
-    scales.forEach((s,i)=>{
-      const label=(s.model||'Scale '+(i+1))+(s.serial?' ('+s.serial+')':'');
-      if(stampChecks[i]) stampedScales.push(label);
-      else unstampedScales.push(label);
+  let rows=[]; let stampedCount=0, unstampedCount=0;
+  const reason=(document.getElementById('stamp-note')?.value||'').trim();
+  if(scales.some((_,i)=>!stampChecks[i]) && !reason) return Swal.fire('Note Required','UN STAMP ලෙස තියෙන scale සඳහා හේතුව/note එක ලියන්න.','warning');
+  const now=new Date(); const officer=document.getElementById('stamp-officer').value; const leader=document.getElementById('stamp-leader').value; const member=document.getElementById('stamp-member').value;
+  if(!scales.length){rows.push({model:'General Stamp',serial:'',weight:'',status:'STAMP'}); stampedCount=1;}
+  scales.forEach((s,i)=>{const st=stampChecks[i]?'STAMP':'UN STAMP'; if(st==='STAMP') stampedCount++; else unstampedCount++; rows.push({model:s.model||'',serial:s.serial||'',weight:s.weight||'',status:st});});
+  for(const r of rows){
+    await db.logs.add({
+      cust_id:stampCust.qr_id,cust_name:stampCust.name,date:now.toISOString(),amount:0,type:'Stamp',
+      notes:r.status==='UN STAMP'?reason:'', stamp_scales:JSON.stringify(r), officer, leader, member,
+      area:stampCust.addr2||'', status:r.status, addr1:stampCust.addr1||'', addr2:stampCust.addr2||'', phone:stampCust.phone||'', nic:stampCust.nic||''
     });
   }
-  const reason=(document.getElementById('stamp-note')?.value||'').trim();
-  if(unstampedScales.length && !reason){
-    return Swal.fire('Note Required','UN STAMP ලෙස තියෙන scale සඳහා හේතුව/note එක ලියන්න.','warning');
-  }
-  await db.logs.add({
-    cust_id:stampCust.qr_id,cust_name:stampCust.name,
-    date:new Date().toISOString(),amount:0,type:'Stamp',
-    notes:`Stamped: ${stampedScales.join(', ')}${unstampedScales.length?' | Un Stamp: '+unstampedScales.join(', ')+' | Reason: '+reason:''}`,
-    stamp_scales:JSON.stringify({stamped:stampedScales,unstamped:unstampedScales,reason})
-  });
-  Swal.fire('✅ Stamp Saved',`Stamped ${stampedScales.length} scale(s) for ${stampCust.name}`,'success');
-  scanMode='choice';
-  navTo('s-home');updateStats();
+  await autoBackupNow('stamp-save');
+  Swal.fire('✅ Stamp Saved',`Stamped ${stampedCount} / Un stamp ${unstampedCount}`,'success');
+  scanMode='choice'; stampCust=null; stampChecks={}; document.getElementById('stamp-active-customer').style.display='none';
+  refreshStampSessionList(); updateStats();
 }
+async function getTodayStampLogs(){
+  const start=getTodayKey(); const end=start+'T23:59:59';
+  const logs=await db.logs.where('type').equals('Stamp').toArray().catch(async()=> (await db.logs.toArray()).filter(x=>x.type==='Stamp'));
+  return logs.filter(l=>(l.date||'')>=start && (l.date||'')<=end);
+}
+async function refreshStampSessionList(){
+  const box=document.getElementById('stamp-session-list'); if(!box) return;
+  const logs=await getTodayStampLogs();
+  document.getElementById('stamp-session-count').innerText=logs.length;
+  if(!logs.length){box.innerHTML='<div class="text-muted text-center py-3" style="font-size:12px;">Today stamp records empty.</div>';return;}
+  box.innerHTML=logs.slice(-10).reverse().map(l=>{let sc={};try{sc=JSON.parse(l.stamp_scales||'{}')}catch(e){};return `<div class="ci" style="cursor:default;padding:10px 12px;"><div><b style="font-size:12px;color:#064C57;">${esc(l.cust_name)}</b><br><small>${new Date(l.date).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})} • ${esc(sc.model||'')} • ${esc(sc.serial||'')}</small></div><span style="font-size:10px;border-radius:20px;padding:3px 8px;background:${l.status==='UN STAMP'?'#dc2626':'#10b981'};color:white;font-weight:800;">${l.status||'STAMP'}</span></div>`}).join('');
+}
+function stampAreaName(logs){
+  const areas=logs.map(l=>l.area||l.addr2||'').filter(Boolean);
+  if(!areas.length) return '-';
+  const first=areas[0], last=areas[areas.length-1];
+  return first===last?first:`${first} to ${last}`;
+}
+async function finishStampDay(){
+  const logs=await getTodayStampLogs();
+  if(!logs.length) return Swal.fire('No Stamp Data','Today stamp records නැහැ.','info');
+  const officer=localStorage.getItem('tlpos_stamp_officer_name')||document.getElementById('stamp-officer').value||'-';
+  const leader=document.getElementById('stamp-leader').value||logs[logs.length-1].leader||'-';
+  const member=document.getElementById('stamp-member').value||logs[logs.length-1].member||'-';
+  const area=stampAreaName(logs), day=getTodayKey();
+  const rows=logs.map(l=>{let sc={};try{sc=JSON.parse(l.stamp_scales||'{}')}catch(e){};return {
+    Time:new Date(l.date).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),
+    CustomerName:l.cust_name||'', Address:shortAddress(l.addr1,l.addr2), ScaleModel:sc.model||'', SerialNumber:sc.serial||'', KG:sc.weight||'', Status:l.status||sc.status||'STAMP', Note:l.notes||''
+  }});
+  const stamped=rows.filter(r=>r.Status==='STAMP').length, unstamped=rows.filter(r=>r.Status==='UN STAMP').length;
+  const aoa=[['STAMP REPORT'],['Stamp Officer',officer,'Date',day,'Area',area],['Team Leader',leader,'Member',member],[],Object.keys(rows[0]),...rows.map(Object.values),[],['TOTAL STAMP',stamped,'TOTAL UN STAMP',unstamped,'FINISH TIME',new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})]];
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=[{wch:12},{wch:24},{wch:30},{wch:18},{wch:18},{wch:12},{wch:12},{wch:30}];
+  // Style metadata for spreadsheet apps that support SheetJS cell styles.
+  const range=XLSX.utils.decode_range(ws['!ref']);
+  for(let R=0;R<=range.e.r;R++) for(let C=0;C<=range.e.c;C++){const a=XLSX.utils.encode_cell({r:R,c:C}); if(!ws[a]) continue; ws[a].s={border:{top:{style:'thin',color:{rgb:'064C57'}},bottom:{style:'thin',color:{rgb:'064C57'}},left:{style:'thin',color:{rgb:'064C57'}},right:{style:'thin',color:{rgb:'064C57'}}}};}
+  [0,4].forEach(R=>{for(let C=0;C<=range.e.c;C++){const a=XLSX.utils.encode_cell({r:R,c:C}); if(ws[a]) ws[a].s={...(ws[a].s||{}),font:{bold:true,color:{rgb:'FFFFFF'},sz:R===0?16:12},fill:{fgColor:{rgb:'064C57'}},alignment:{horizontal:'center'}};}});
+  const sumRow=range.e.r; for(let C=0;C<=range.e.c;C++){const a=XLSX.utils.encode_cell({r:sumRow,c:C}); if(ws[a]) ws[a].s={...(ws[a].s||{}),font:{bold:true,sz:14,color:{rgb:'064C57'}},fill:{fgColor:{rgb:'E0F2F1'}}};}
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Stamp Report');
+  const fname=`Stamp_Report_${day}_${area.replace(/\s+/g,'_')}.xlsx`;
+  xlsxDownload(wb,fname);
+  await autoBackupNow('stamp-finish');
+  const email=localStorage.getItem('tlpos_email')||'';
+  if(email){
+    const subject=encodeURIComponent(`Stamp Report ${day} - ${area}`);
+    const body=encodeURIComponent(`Stamp Officer: ${officer}\nDate: ${day}\nArea: ${area}\nTeam Leader: ${leader}\nMember: ${member}\n\nExcel file downloaded as ${fname}. Please attach this file before sending.\n\nTotal Stamp: ${stamped}\nTotal Un Stamp: ${unstamped}`);
+    window.open(`mailto:${email}?subject=${subject}&body=${body}`,'_blank');
+  }
+  localStorage.removeItem('tlpos_stamp_officer_date'); localStorage.removeItem('tlpos_stamp_officer_name');
+  loadStampOfficerLock();
+  Swal.fire('✅ Stamp Finished',`Excel report created. Stamp: ${stamped}, Un Stamp: ${unstamped}`,'success');
+}
+function shortAddress(a1,a2){let s=[a1,a2].filter(Boolean).join(', '); return s.length>42?s.slice(0,42)+'...':s;}
 
 // ════ INVOICE ════
 async function generateInvoice(){
@@ -1146,9 +1265,19 @@ async function exportData(type){
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Records');
   xlsxDownload(wb,`TLpos_${type}_Report.xlsx`);
 }
+async function makeBackupObject(){
+  const c=await db.customers.toArray(), l=await db.logs.toArray(), i=await db.invoices.toArray();
+  const settings={};
+  ['tlpos_email','tlpos_company','tlpos_cphone','tlpos_stamp_officers','tlpos_stamp_leaders','tlpos_stamp_members','tlpos_stamp_officer_date','tlpos_stamp_officer_name'].forEach(k=>settings[k]=localStorage.getItem(k)||'');
+  return {version:4, created_at:new Date().toISOString(), customers:c, logs:l, invoices:i, settings};
+}
 async function exportDatabase(){
-  const c=await db.customers.toArray(),l=await db.logs.toArray(),i=await db.invoices.toArray();
-  const jsonStr=JSON.stringify({customers:c,logs:l,invoices:i});
+  const obj=await makeBackupObject();
+  const jsonStr=JSON.stringify(obj,null,2);
+  if(await writeAutoBackupFile(jsonStr, `TLpos_Backup_${getTodayKey()}.json`)){
+    Swal.fire('✅ Backup Saved','Selected backup folder එකට backup file එක save වුණා.','success');
+    return;
+  }
   const dataUri='data:application/json;charset=utf-8,'+encodeURIComponent(jsonStr);
   const a=document.createElement('a');a.href=dataUri;a.download=`TLpos_Backup_${Date.now()}.json`;document.body.appendChild(a);a.click();document.body.removeChild(a);
 }
@@ -1157,16 +1286,52 @@ async function importDatabase(){
   if(file){
     const r=new FileReader();
     r.onload=async e=>{
-      const d=JSON.parse(e.target.result);
-      await db.customers.clear();await db.logs.clear();
-      if(db.invoices)await db.invoices.clear();
-      await db.customers.bulkAdd(d.customers);await db.logs.bulkAdd(d.logs);
-      if(d.invoices)await db.invoices.bulkAdd(d.invoices);
-      Swal.fire('✅ Restored','Database restored.','success');updateStats();allCustomers=[];
+      try{
+        const d=JSON.parse(e.target.result);
+        await db.customers.clear();await db.logs.clear(); if(db.invoices)await db.invoices.clear();
+        if(d.customers?.length) await db.customers.bulkAdd(d.customers);
+        if(d.logs?.length) await db.logs.bulkAdd(d.logs);
+        if(d.invoices?.length) await db.invoices.bulkAdd(d.invoices);
+        if(d.settings) Object.keys(d.settings).forEach(k=>localStorage.setItem(k,d.settings[k]||''));
+        Swal.fire('✅ Restored','Database restored.','success'); updateStats(); allCustomers=[]; loadAdmSettings(); await autoBackupNow('restore');
+      }catch(err){Swal.fire('Restore Error',String(err),'error');}
     };
     r.readAsText(file);
   }
 }
+async function selectBackupFolder(){
+  if(!window.showDirectoryPicker){
+    updateBackupStatus('This browser does not support folder auto backup. Backup Now will download JSON.');
+    return Swal.fire('Not Supported','ඔයාගේ browser එක folder auto backup support කරන්නේ නැහැ. Chrome/Edge desktop වල වැඩ කරයි.','warning');
+  }
+  const dir=await window.showDirectoryPicker();
+  await idbSet('backupDir',dir);
+  localStorage.setItem('tlpos_backup_selected','yes');
+  updateBackupStatus('✅ Auto backup folder selected.');
+  await autoBackupNow('folder-selected');
+}
+function updateBackupStatus(msg){
+  const el=document.getElementById('backup-status'); if(!el) return;
+  el.innerText=msg || (localStorage.getItem('tlpos_backup_selected')==='yes'?'✅ Auto backup folder selected.':'No auto backup folder selected.');
+}
+async function autoBackupNow(reason='auto'){
+  try{
+    const obj=await makeBackupObject(); obj.reason=reason;
+    await writeAutoBackupFile(JSON.stringify(obj,null,2), `TLpos_Auto_Backup_${getTodayKey()}.json`);
+  }catch(e){console.warn('Auto backup failed',e);}
+}
+async function writeAutoBackupFile(content, filename){
+  if(!window.showDirectoryPicker) return false;
+  const dir=await idbGet('backupDir'); if(!dir) return false;
+  try{
+    const perm=await dir.requestPermission({mode:'readwrite'}); if(perm!=='granted') return false;
+    const handle=await dir.getFileHandle(filename,{create:true});
+    const writable=await handle.createWritable(); await writable.write(content); await writable.close();
+    updateBackupStatus('✅ Last auto backup: '+new Date().toLocaleTimeString()); return true;
+  }catch(e){console.warn(e); updateBackupStatus('Auto backup permission needed. Press Select Auto Backup Folder again.'); return false;}
+}
+function idbSet(key,val){return new Promise((res,rej)=>{const rq=indexedDB.open('TLpos_FileHandles',1);rq.onupgradeneeded=()=>rq.result.createObjectStore('kv');rq.onerror=()=>rej(rq.error);rq.onsuccess=()=>{const tx=rq.result.transaction('kv','readwrite');tx.objectStore('kv').put(val,key);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);};});}
+function idbGet(key){return new Promise((res,rej)=>{const rq=indexedDB.open('TLpos_FileHandles',1);rq.onupgradeneeded=()=>rq.result.createObjectStore('kv');rq.onerror=()=>rej(rq.error);rq.onsuccess=()=>{const tx=rq.result.transaction('kv','readonly');const g=tx.objectStore('kv').get(key);g.onsuccess=()=>res(g.result);g.onerror=()=>rej(g.error);};});}
 
 // ════ ADMIN ════
 function openAdmin(){
@@ -1186,11 +1351,19 @@ function loadAdmSettings(){
   document.getElementById('adm-email').value=localStorage.getItem('tlpos_email')||'';
   document.getElementById('adm-company').value=localStorage.getItem('tlpos_company')||'';
   document.getElementById('adm-cphone').value=localStorage.getItem('tlpos_cphone')||'';
+  document.getElementById('adm-officers').value=localStorage.getItem('tlpos_stamp_officers')||'';
+  document.getElementById('adm-leaders').value=localStorage.getItem('tlpos_stamp_leaders')||'';
+  document.getElementById('adm-members').value=localStorage.getItem('tlpos_stamp_members')||'';
+  updateBackupStatus();
 }
 function saveAdmSettings(){
   localStorage.setItem('tlpos_email',document.getElementById('adm-email').value);
   localStorage.setItem('tlpos_company',document.getElementById('adm-company').value||'Ceylon Weighing Machine Limited');
   localStorage.setItem('tlpos_cphone',document.getElementById('adm-cphone').value);
+  localStorage.setItem('tlpos_stamp_officers',document.getElementById('adm-officers').value);
+  localStorage.setItem('tlpos_stamp_leaders',document.getElementById('adm-leaders').value);
+  localStorage.setItem('tlpos_stamp_members',document.getElementById('adm-members').value);
+  autoBackupNow('settings');
   Swal.fire('✅ Saved','Settings saved','success');
 }
 function lockAdm(){
@@ -1222,7 +1395,7 @@ function kpDel(){kpVal=kpVal.slice(0,-1);document.getElementById('kp-disp').inne
 function kpClr(){kpVal='';document.getElementById('kp-disp').innerText='_';}
 function kpDone(){if(kpTgt)document.getElementById(kpTgt).value=kpVal;closeKp();}
 
-window.onload=()=>{updateStats();loadAllCustomers();};
+window.onload=()=>{updateStats();loadAllCustomers();updateBackupStatus();};
 
 // ══ ANDROID-SAFE EXCEL DOWNLOAD ══
 function xlsxDownload(wb, filename){
