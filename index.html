@@ -11,6 +11,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
 :root{--p:#064C57;--pd:#032b31;--pl:#0a6b7a;--bg:#e0e5ec;--ac:#F59E0B;--sl:#ffffff;--sd:#b8bec5;}
@@ -171,6 +172,17 @@ h4,h5,.stat-value,.reb,.keypad-btn{font-family:'Rajdhani',sans-serif;}
 .qrc{background:white;border-radius:18px;padding:22px;box-shadow:0 8px 28px rgba(0,0,0,.1);display:inline-block;width:100%;max-width:280px;}
 .qrbh{background:linear-gradient(135deg,#8B0000,#B22222);border-radius:10px 10px 0 0;padding:10px;margin:-22px -22px 14px -22px;color:white;font-weight:700;font-size:12px;letter-spacing:1px;}
 .qrcw{display:inline-block;padding:6px;background:white;border:2px solid #e5e7eb;border-radius:10px;}
+
+
+/* Small name list editor for admin */
+.name-list-box{background:rgba(6,76,87,.035);border-radius:14px;padding:10px;box-shadow:inset 3px 3px 7px rgba(184,190,197,.7),inset -3px -3px 7px rgba(255,255,255,.65);}
+.name-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+.name-row input{flex:1;background:var(--bg);border:none;border-radius:10px;padding:10px 12px;box-shadow:inset 3px 3px 6px var(--sd),inset -3px -3px 6px var(--sl);font-size:13px;}
+.name-row input:focus{outline:none;box-shadow:inset 3px 3px 6px var(--sd),inset -3px -3px 6px var(--sl),0 0 0 2px rgba(6,76,87,.25);}
+.name-mini-btn{width:36px;height:36px;border:none;border-radius:10px;background:linear-gradient(135deg,#064C57,#0a6b7a);color:white;font-weight:900;box-shadow:3px 3px 7px var(--sd),-3px -3px 7px var(--sl);}
+.name-mini-btn.del{background:linear-gradient(135deg,#dc2626,#991b1b);}
+.stamp-lock-note{font-size:10px;color:#64748b;font-weight:700;display:block;margin-top:5px;}
+.stamp-change-btn{border:none;background:transparent;color:#0a6b7a;font-weight:800;font-size:10px;padding:0;margin-left:6px;text-decoration:underline;}
 
 @media print{
   body>*:not(#inv-print-area){display:none!important;}
@@ -353,8 +365,8 @@ h4,h5,.stat-value,.reb,.keypad-btn{font-family:'Rajdhani',sans-serif;}
       <small id="stamp-officer-lock" style="font-size:10px;color:#64748b;font-weight:700;display:block;margin-top:5px;"></small>
     </div>
     <div class="row g-2">
-      <div class="col-6 fg"><span class="fl">👥 Team Leader</span><select id="stamp-leader" class="fs"></select></div>
-      <div class="col-6 fg"><span class="fl">👤 Member</span><select id="stamp-member" class="fs"></select></div>
+      <div class="col-6 fg"><span class="fl">👥 Team Leader</span><select id="stamp-leader" class="fs" onchange="lockStampTeamForDay('leader')"></select><small id="stamp-leader-lock" class="stamp-lock-note"></small></div>
+      <div class="col-6 fg"><span class="fl">👤 Member</span><select id="stamp-member" class="fs" onchange="lockStampTeamForDay('member')"></select><small id="stamp-member-lock" class="stamp-lock-note"></small></div>
     </div>
 
     <button class="reb w-100 py-3 mb-3" onclick="startStampScanFromPage()"><i class="fas fa-qrcode me-2"></i>SCAN CUSTOMER QR FOR STAMP</button>
@@ -426,7 +438,7 @@ h4,h5,.stat-value,.reb,.keypad-btn{font-family:'Rajdhani',sans-serif;}
     <i class="fas fa-lock"></i>
     <h5 class="fw-bold mb-1" style="color:var(--p);">ADMIN PANEL</h5>
     <p class="text-muted small mb-4">Enter password to continue</p>
-    <input type="password" id="adm-pw" class="fc mb-3 text-center" style="font-size:20px;letter-spacing:8px;max-width:200px;margin:0 auto 12px;" placeholder="••••" maxlength="10">
+    <input type="password" id="adm-pw" class="fc mb-3 text-center" style="font-size:20px;letter-spacing:8px;max-width:200px;margin:0 auto 12px;" placeholder="••••" maxlength="10" oninput="autoAdminLogin(this)">
     <button class="reb py-3" onclick="checkAdmPw()"><i class="fas fa-unlock me-2"></i>UNLOCK</button>
   </div>
   <div id="adm-content" style="display:none;">
@@ -435,9 +447,9 @@ h4,h5,.stat-value,.reb,.keypad-btn{font-family:'Rajdhani',sans-serif;}
       <div class="fg"><span class="fl">📧 Report / Invoice Email Recipient</span><input type="email" id="adm-email" class="fc" placeholder="admin@example.com"></div>
       <div class="fg"><span class="fl">🏢 Company Name</span><input type="text" id="adm-company" class="fc" placeholder="Ceylon Weighing Machine Limited"></div>
       <div class="fg"><span class="fl">📞 Company Phone</span><input type="text" id="adm-cphone" class="fc" placeholder="+94 XX XXX XXXX"></div>
-      <div class="fg"><span class="fl">👮 Stamp Officers</span><textarea id="adm-officers" class="fc" rows="3" placeholder="One officer per line"></textarea></div>
-      <div class="fg"><span class="fl">👥 Team Leaders</span><textarea id="adm-leaders" class="fc" rows="3" placeholder="One team leader per line"></textarea></div>
-      <div class="fg"><span class="fl">👤 Team Members</span><textarea id="adm-members" class="fc" rows="3" placeholder="One member per line"></textarea></div>
+      <div class="fg"><span class="fl">👮 Stamp Officers</span><div id="adm-officers-box" class="name-list-box"></div></div>
+      <div class="fg"><span class="fl">👥 Team Leaders</span><div id="adm-leaders-box" class="name-list-box"></div></div>
+      <div class="fg"><span class="fl">👤 Team Members</span><div id="adm-members-box" class="name-list-box"></div></div>
       <button class="reb w-100 py-3 mb-3" onclick="saveAdmSettings()"><i class="fas fa-save me-2"></i>SAVE SETTINGS</button>
       <hr style="border-color:rgba(0,0,0,.1);">
       <div class="mc" style="padding:14px;margin-bottom:12px;background:rgba(6,76,87,.04);">
@@ -845,10 +857,12 @@ function fillSelect(id, arr, placeholder){
 }
 function esc(v){return String(v||'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
 function openStampMainPage(){
+  const day=getTodayKey(); if(!localStorage.getItem('tlpos_stamp_session_start_'+day)) localStorage.setItem('tlpos_stamp_session_start_'+day, day);
   navTo('s-stamp');
   document.getElementById('stamp-active-customer').style.display='none';
   loadStampAdminLists();
   loadStampOfficerLock();
+  loadStampTeamLock();
   refreshStampSessionList();
 }
 function loadStampAdminLists(){
@@ -871,6 +885,50 @@ function loadStampOfficerLock(){
     sel.disabled=false; sel.value=''; note.innerText='දවසේ මුලින්ම officer select කළාම Stamp Finish වන තෙක් lock වේ.';
   }
 }
+
+function loadStampTeamLock(){
+  const today=getTodayKey();
+  const leader=localStorage.getItem('tlpos_stamp_leader_name')||'';
+  const member=localStorage.getItem('tlpos_stamp_member_name')||'';
+  const leaderDate=localStorage.getItem('tlpos_stamp_leader_date');
+  const memberDate=localStorage.getItem('tlpos_stamp_member_date');
+  applyStampSelectLock('leader', leaderDate===today?leader:'');
+  applyStampSelectLock('member', memberDate===today?member:'');
+}
+function applyStampSelectLock(type,val){
+  const sel=document.getElementById(type==='leader'?'stamp-leader':'stamp-member');
+  const note=document.getElementById(type==='leader'?'stamp-leader-lock':'stamp-member-lock');
+  if(!sel||!note) return;
+  const label=type==='leader'?'Team leader':'Member';
+  if(val){
+    if([...sel.options].every(o=>o.value!==val)) sel.add(new Option(val,val));
+    sel.value=val; sel.disabled=true;
+    note.innerHTML=`🔒 ${label} remembered for today. <button class="stamp-change-btn" onclick="unlockStampTeam('${type}')">Change</button>`;
+  }else{
+    sel.disabled=false; sel.value='';
+    note.innerText=`දවසේ මුලින්ම ${label.toLowerCase()} select කළාම මතකයේ තබාගනී.`;
+  }
+}
+function lockStampTeamForDay(type){
+  const today=getTodayKey();
+  const sel=document.getElementById(type==='leader'?'stamp-leader':'stamp-member'); if(!sel||!sel.value) return;
+  const key=type==='leader'?'tlpos_stamp_leader_name':'tlpos_stamp_member_name';
+  const dkey=type==='leader'?'tlpos_stamp_leader_date':'tlpos_stamp_member_date';
+  const oldDate=localStorage.getItem(dkey), oldVal=localStorage.getItem(key);
+  if(oldDate===today && oldVal){ sel.value=oldVal; applyStampSelectLock(type, oldVal); return; }
+  localStorage.setItem(key, sel.value); localStorage.setItem(dkey, today); applyStampSelectLock(type, sel.value); autoBackupNow(type+'-lock');
+}
+async function unlockStampTeam(type){
+  const res=await Swal.fire({title:'Change '+(type==='leader'?'Team Leader':'Member')+'?',text:'නව නමක් select කරන්න පුළුවන්.',icon:'question',showCancelButton:true,confirmButtonText:'Change'});
+  if(!res.isConfirmed) return;
+  localStorage.removeItem(type==='leader'?'tlpos_stamp_leader_name':'tlpos_stamp_member_name');
+  localStorage.removeItem(type==='leader'?'tlpos_stamp_leader_date':'tlpos_stamp_member_date');
+  applyStampSelectLock(type,'');
+}
+function clearStampDayLocks(){
+  ['tlpos_stamp_officer_date','tlpos_stamp_officer_name','tlpos_stamp_leader_date','tlpos_stamp_leader_name','tlpos_stamp_member_date','tlpos_stamp_member_name'].forEach(k=>localStorage.removeItem(k));
+}
+
 function lockStampOfficerForDay(){
   const sel=document.getElementById('stamp-officer');
   if(!sel.value) return;
@@ -894,13 +952,15 @@ function ensureStampHeaderSelected(){
   if(!officer) return Swal.fire('Officer Required','Stamp officer name select කරන්න.','warning'),false;
   lockStampOfficerForDay();
   if(!leader) return Swal.fire('Team Leader Required','Team leader name select කරන්න.','warning'),false;
+  lockStampTeamForDay('leader');
   if(!member) return Swal.fire('Member Required','Member name select කරන්න.','warning'),false;
+  lockStampTeamForDay('member');
   return true;
 }
 function openStampPage(cust){
   stampCust=cust; stampChecks={};
   navTo('s-stamp');
-  loadStampAdminLists(); loadStampOfficerLock(); refreshStampSessionList();
+  loadStampAdminLists(); loadStampOfficerLock(); loadStampTeamLock(); refreshStampSessionList();
   document.getElementById('stamp-active-customer').style.display='block';
   document.getElementById('stamp-cust-name').innerText=cust.name;
   document.getElementById('stamp-cust-info').innerHTML=
@@ -941,7 +1001,7 @@ async function saveStamp(){
   let rows=[]; let stampedCount=0, unstampedCount=0;
   const reason=(document.getElementById('stamp-note')?.value||'').trim();
   if(scales.some((_,i)=>!stampChecks[i]) && !reason) return Swal.fire('Note Required','UN STAMP ලෙස තියෙන scale සඳහා හේතුව/note එක ලියන්න.','warning');
-  const now=new Date(); const officer=document.getElementById('stamp-officer').value; const leader=document.getElementById('stamp-leader').value; const member=document.getElementById('stamp-member').value;
+  const now=new Date(); const officer=localStorage.getItem('tlpos_stamp_officer_name')||document.getElementById('stamp-officer').value; const leader=localStorage.getItem('tlpos_stamp_leader_name')||document.getElementById('stamp-leader').value; const member=localStorage.getItem('tlpos_stamp_member_name')||document.getElementById('stamp-member').value;
   if(!scales.length){rows.push({model:'General Stamp',serial:'',weight:'',status:'STAMP'}); stampedCount=1;}
   scales.forEach((s,i)=>{const st=stampChecks[i]?'STAMP':'UN STAMP'; if(st==='STAMP') stampedCount++; else unstampedCount++; rows.push({model:s.model||'',serial:s.serial||'',weight:s.weight||'',status:st});});
   for(const r of rows){
@@ -957,7 +1017,9 @@ async function saveStamp(){
   refreshStampSessionList(); updateStats();
 }
 async function getTodayStampLogs(){
-  const start=getTodayKey(); const end=start+'T23:59:59';
+  const day=getTodayKey();
+  const start=localStorage.getItem('tlpos_stamp_session_start_'+day)||day;
+  const end=day+'T23:59:59';
   const logs=await db.logs.where('type').equals('Stamp').toArray().catch(async()=> (await db.logs.toArray()).filter(x=>x.type==='Stamp'));
   return logs.filter(l=>(l.date||'')>=start && (l.date||'')<=end);
 }
@@ -978,24 +1040,54 @@ async function finishStampDay(){
   const logs=await getTodayStampLogs();
   if(!logs.length) return Swal.fire('No Stamp Data','Today stamp records නැහැ.','info');
   const officer=localStorage.getItem('tlpos_stamp_officer_name')||document.getElementById('stamp-officer').value||'-';
-  const leader=document.getElementById('stamp-leader').value||logs[logs.length-1].leader||'-';
-  const member=document.getElementById('stamp-member').value||logs[logs.length-1].member||'-';
+  const leader=localStorage.getItem('tlpos_stamp_leader_name')||document.getElementById('stamp-leader').value||logs[logs.length-1].leader||'-';
+  const member=localStorage.getItem('tlpos_stamp_member_name')||document.getElementById('stamp-member').value||logs[logs.length-1].member||'-';
   const area=stampAreaName(logs), day=getTodayKey();
+  const finishTime=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
   const rows=logs.map(l=>{let sc={};try{sc=JSON.parse(l.stamp_scales||'{}')}catch(e){};return {
     Time:new Date(l.date).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),
-    CustomerName:l.cust_name||'', Address:shortAddress(l.addr1,l.addr2), ScaleModel:sc.model||'', SerialNumber:sc.serial||'', KG:sc.weight||'', Status:l.status||sc.status||'STAMP', Note:l.notes||''
+    'Customer Name':l.cust_name||'',
+    Address:shortAddress(l.addr1,l.addr2),
+    'Scale Model':sc.model||'',
+    'Serial Number':sc.serial||'',
+    KG:sc.weight||'',
+    Status:l.status||sc.status||'STAMP',
+    Note:l.notes||''
   }});
   const stamped=rows.filter(r=>r.Status==='STAMP').length, unstamped=rows.filter(r=>r.Status==='UN STAMP').length;
-  const aoa=[['STAMP REPORT'],['Stamp Officer',officer,'Date',day,'Area',area],['Team Leader',leader,'Member',member],[],Object.keys(rows[0]),...rows.map(Object.values),[],['TOTAL STAMP',stamped,'TOTAL UN STAMP',unstamped,'FINISH TIME',new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})]];
+  const header=['Time','Customer Name','Address','Scale Model','Serial Number','KG','Status','Note'];
+  const aoa=[
+    ['STAMP REPORT','','','','','','',''],
+    ['Stamp Officer',officer,'','','Date',day,'',''],
+    ['Team Leader',leader,'','','Member',member,'',''],
+    ['Area',area,'','','Finish Time',finishTime,'',''],
+    [],
+    header,
+    ...rows.map(r=>header.map(h=>r[h])),
+    [],
+    ['TOTAL STAMP',stamped,'TOTAL UN STAMP',unstamped,'TOTAL RECORDS',stamped+unstamped,'FINISH TIME',finishTime]
+  ];
   const ws=XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols']=[{wch:12},{wch:24},{wch:30},{wch:18},{wch:18},{wch:12},{wch:12},{wch:30}];
-  // Style metadata for spreadsheet apps that support SheetJS cell styles.
+  ws['!cols']=[{wch:14},{wch:26},{wch:34},{wch:20},{wch:22},{wch:12},{wch:14},{wch:34}];
+  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:7}}];
   const range=XLSX.utils.decode_range(ws['!ref']);
-  for(let R=0;R<=range.e.r;R++) for(let C=0;C<=range.e.c;C++){const a=XLSX.utils.encode_cell({r:R,c:C}); if(!ws[a]) continue; ws[a].s={border:{top:{style:'thin',color:{rgb:'064C57'}},bottom:{style:'thin',color:{rgb:'064C57'}},left:{style:'thin',color:{rgb:'064C57'}},right:{style:'thin',color:{rgb:'064C57'}}}};}
-  [0,4].forEach(R=>{for(let C=0;C<=range.e.c;C++){const a=XLSX.utils.encode_cell({r:R,c:C}); if(ws[a]) ws[a].s={...(ws[a].s||{}),font:{bold:true,color:{rgb:'FFFFFF'},sz:R===0?16:12},fill:{fgColor:{rgb:'064C57'}},alignment:{horizontal:'center'}};}});
-  const sumRow=range.e.r; for(let C=0;C<=range.e.c;C++){const a=XLSX.utils.encode_cell({r:sumRow,c:C}); if(ws[a]) ws[a].s={...(ws[a].s||{}),font:{bold:true,sz:14,color:{rgb:'064C57'}},fill:{fgColor:{rgb:'E0F2F1'}}};}
+  const green='064C57', light='E8F3F1', yellow='FFF4D6', white='FFFFFF';
+  function styleCell(r,c,style){const a=XLSX.utils.encode_cell({r,c}); if(ws[a]) ws[a].s={...(ws[a].s||{}),...style};}
+  const border={top:{style:'thin',color:{rgb:green}},bottom:{style:'thin',color:{rgb:green}},left:{style:'thin',color:{rgb:green}},right:{style:'thin',color:{rgb:green}}};
+  for(let R=0;R<=range.e.r;R++) for(let C=0;C<=range.e.c;C++) styleCell(R,C,{border,alignment:{vertical:'center',wrapText:true}});
+  for(let C=0;C<=7;C++) styleCell(0,C,{border,fill:{fgColor:{rgb:green}},font:{bold:true,color:{rgb:white},sz:18},alignment:{horizontal:'center',vertical:'center'}});
+  [1,2,3].forEach(R=>{[0,4].forEach(C=>styleCell(R,C,{border,fill:{fgColor:{rgb:green}},font:{bold:true,color:{rgb:white},sz:12},alignment:{horizontal:'center'}})); [1,5].forEach(C=>styleCell(R,C,{border,fill:{fgColor:{rgb:light}},font:{bold:true,color:{rgb:green},sz:12}}));});
+  for(let C=0;C<=7;C++) styleCell(5,C,{border,fill:{fgColor:{rgb:green}},font:{bold:true,color:{rgb:white},sz:12},alignment:{horizontal:'center',vertical:'center'}});
+  const summaryRow=aoa.length-1;
+  for(let C=0;C<=7;C++) styleCell(summaryRow,C,{border,fill:{fgColor:{rgb:yellow}},font:{bold:true,color:{rgb:green},sz:15},alignment:{horizontal:'center',vertical:'center'}});
+  for(let R=6;R<summaryRow-1;R++){
+    const status=ws[XLSX.utils.encode_cell({r:R,c:6})]?.v;
+    if(status==='UN STAMP') styleCell(R,6,{border,fill:{fgColor:{rgb:'FEE2E2'}},font:{bold:true,color:{rgb:'B91C1C'}}});
+    else styleCell(R,6,{border,fill:{fgColor:{rgb:'DCFCE7'}},font:{bold:true,color:{rgb:'166534'}}});
+  }
+  ws['!rows']=[{hpt:28},{hpt:22},{hpt:22},{hpt:22},{hpt:8},{hpt:24}];
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Stamp Report');
-  const fname=`Stamp_Report_${day}_${area.replace(/\s+/g,'_')}.xlsx`;
+  const fname=`Stamp_Report_${day}_${area.replace(/[^A-Za-z0-9]+/g,'_')}.xlsx`;
   xlsxDownload(wb,fname);
   await autoBackupNow('stamp-finish');
   const email=localStorage.getItem('tlpos_email')||'';
@@ -1004,8 +1096,10 @@ async function finishStampDay(){
     const body=encodeURIComponent(`Stamp Officer: ${officer}\nDate: ${day}\nArea: ${area}\nTeam Leader: ${leader}\nMember: ${member}\n\nExcel file downloaded as ${fname}. Please attach this file before sending.\n\nTotal Stamp: ${stamped}\nTotal Un Stamp: ${unstamped}`);
     window.open(`mailto:${email}?subject=${subject}&body=${body}`,'_blank');
   }
-  localStorage.removeItem('tlpos_stamp_officer_date'); localStorage.removeItem('tlpos_stamp_officer_name');
-  loadStampOfficerLock();
+  localStorage.setItem('tlpos_stamp_session_start_'+day, new Date().toISOString());
+  clearStampDayLocks();
+  loadStampAdminLists(); loadStampOfficerLock(); loadStampTeamLock();
+  await refreshStampSessionList();
   Swal.fire('✅ Stamp Finished',`Excel report created. Stamp: ${stamped}, Un Stamp: ${unstamped}`,'success');
 }
 function shortAddress(a1,a2){let s=[a1,a2].filter(Boolean).join(', '); return s.length>42?s.slice(0,42)+'...':s;}
@@ -1095,7 +1189,18 @@ function printInvoice(){
       .iab .tl{font-size:11px;opacity:.85;letter-spacing:1px;}.iab .tv{font-size:24px;font-weight:700;color:#F59E0B;}
       .iftr{text-align:center;margin-top:12px;font-size:10px;color:#94a3b8;padding-top:10px;border-top:1px solid #f1f5f9;}
       .print-btn{display:block;width:100%;padding:14px;background:linear-gradient(135deg,#064C57,#0a6b7a);color:white;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;margin-top:16px;letter-spacing:1px;}
-      @media print{.print-btn{display:none!important;}}
+      
+/* Small name list editor for admin */
+.name-list-box{background:rgba(6,76,87,.035);border-radius:14px;padding:10px;box-shadow:inset 3px 3px 7px rgba(184,190,197,.7),inset -3px -3px 7px rgba(255,255,255,.65);}
+.name-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+.name-row input{flex:1;background:var(--bg);border:none;border-radius:10px;padding:10px 12px;box-shadow:inset 3px 3px 6px var(--sd),inset -3px -3px 6px var(--sl);font-size:13px;}
+.name-row input:focus{outline:none;box-shadow:inset 3px 3px 6px var(--sd),inset -3px -3px 6px var(--sl),0 0 0 2px rgba(6,76,87,.25);}
+.name-mini-btn{width:36px;height:36px;border:none;border-radius:10px;background:linear-gradient(135deg,#064C57,#0a6b7a);color:white;font-weight:900;box-shadow:3px 3px 7px var(--sd),-3px -3px 7px var(--sl);}
+.name-mini-btn.del{background:linear-gradient(135deg,#dc2626,#991b1b);}
+.stamp-lock-note{font-size:10px;color:#64748b;font-weight:700;display:block;margin-top:5px;}
+.stamp-change-btn{border:none;background:transparent;color:#0a6b7a;font-weight:800;font-size:10px;padding:0;margin-left:6px;text-decoration:underline;}
+
+@media print{.print-btn{display:none!important;}}
     </style></head><body>
     ${html}
     <button class="print-btn" onclick="window.print()">🖨️ PRINT</button>
@@ -1268,7 +1373,7 @@ async function exportData(type){
 async function makeBackupObject(){
   const c=await db.customers.toArray(), l=await db.logs.toArray(), i=await db.invoices.toArray();
   const settings={};
-  ['tlpos_email','tlpos_company','tlpos_cphone','tlpos_stamp_officers','tlpos_stamp_leaders','tlpos_stamp_members','tlpos_stamp_officer_date','tlpos_stamp_officer_name'].forEach(k=>settings[k]=localStorage.getItem(k)||'');
+  ['tlpos_email','tlpos_company','tlpos_cphone','tlpos_stamp_officers','tlpos_stamp_leaders','tlpos_stamp_members','tlpos_stamp_officer_date','tlpos_stamp_officer_name','tlpos_stamp_leader_date','tlpos_stamp_leader_name','tlpos_stamp_member_date','tlpos_stamp_member_name'].forEach(k=>settings[k]=localStorage.getItem(k)||'');
   return {version:4, created_at:new Date().toISOString(), customers:c, logs:l, invoices:i, settings};
 }
 async function exportDatabase(){
@@ -1333,6 +1438,43 @@ async function writeAutoBackupFile(content, filename){
 function idbSet(key,val){return new Promise((res,rej)=>{const rq=indexedDB.open('TLpos_FileHandles',1);rq.onupgradeneeded=()=>rq.result.createObjectStore('kv');rq.onerror=()=>rej(rq.error);rq.onsuccess=()=>{const tx=rq.result.transaction('kv','readwrite');tx.objectStore('kv').put(val,key);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);};});}
 function idbGet(key){return new Promise((res,rej)=>{const rq=indexedDB.open('TLpos_FileHandles',1);rq.onupgradeneeded=()=>rq.result.createObjectStore('kv');rq.onerror=()=>rej(rq.error);rq.onsuccess=()=>{const tx=rq.result.transaction('kv','readonly');const g=tx.objectStore('kv').get(key);g.onsuccess=()=>res(g.result);g.onerror=()=>rej(g.error);};});}
 
+
+// ════ ADMIN SMALL NAME LIST EDITORS ════
+const nameEditorMap={
+  officers:{box:'adm-officers-box', storage:'tlpos_stamp_officers', placeholder:'Officer name'},
+  leaders:{box:'adm-leaders-box', storage:'tlpos_stamp_leaders', placeholder:'Team leader name'},
+  members:{box:'adm-members-box', storage:'tlpos_stamp_members', placeholder:'Member name'}
+};
+function autoAdminLogin(inp){
+  if(inp.value===ADM_PW){ checkAdmPw(); }
+}
+function getNameEditorValues(kind){
+  const cfg=nameEditorMap[kind], box=document.getElementById(cfg.box);
+  if(!box) return [];
+  return [...box.querySelectorAll('input')].map(i=>i.value.trim()).filter(Boolean);
+}
+function renderNameEditor(kind, values){
+  const cfg=nameEditorMap[kind], box=document.getElementById(cfg.box); if(!box) return;
+  const arr=(values&&values.length?values:['']);
+  box.innerHTML=arr.map((v,i)=>`<div class="name-row"><input type="text" value="${esc(v)}" placeholder="${cfg.placeholder}"><button type="button" class="name-mini-btn del" onclick="removeNameRow('${kind}',${i})"><i class="fas fa-trash"></i></button></div>`).join('')+
+    `<button type="button" class="name-mini-btn" onclick="addNameRow('${kind}')"><i class="fas fa-plus"></i></button>`;
+}
+function addNameRow(kind){
+  const vals=getNameEditorValues(kind); vals.push(''); renderNameEditor(kind, vals);
+  const box=document.getElementById(nameEditorMap[kind].box); const inputs=box.querySelectorAll('input'); inputs[inputs.length-1].focus();
+}
+function removeNameRow(kind,idx){
+  const vals=getNameEditorValues(kind); vals.splice(idx,1); renderNameEditor(kind, vals.length?vals:['']);
+}
+function saveNameEditorsToStorage(){
+  Object.keys(nameEditorMap).forEach(k=>{localStorage.setItem(nameEditorMap[k].storage, getNameEditorValues(k).join('\n'));});
+}
+function loadNameEditorsFromStorage(){
+  renderNameEditor('officers', listFromStorage('tlpos_stamp_officers'));
+  renderNameEditor('leaders', listFromStorage('tlpos_stamp_leaders'));
+  renderNameEditor('members', listFromStorage('tlpos_stamp_members'));
+}
+
 // ════ ADMIN ════
 function openAdmin(){
   navTo('s-admin');
@@ -1351,18 +1493,14 @@ function loadAdmSettings(){
   document.getElementById('adm-email').value=localStorage.getItem('tlpos_email')||'';
   document.getElementById('adm-company').value=localStorage.getItem('tlpos_company')||'';
   document.getElementById('adm-cphone').value=localStorage.getItem('tlpos_cphone')||'';
-  document.getElementById('adm-officers').value=localStorage.getItem('tlpos_stamp_officers')||'';
-  document.getElementById('adm-leaders').value=localStorage.getItem('tlpos_stamp_leaders')||'';
-  document.getElementById('adm-members').value=localStorage.getItem('tlpos_stamp_members')||'';
+  loadNameEditorsFromStorage();
   updateBackupStatus();
 }
 function saveAdmSettings(){
   localStorage.setItem('tlpos_email',document.getElementById('adm-email').value);
   localStorage.setItem('tlpos_company',document.getElementById('adm-company').value||'Ceylon Weighing Machine Limited');
   localStorage.setItem('tlpos_cphone',document.getElementById('adm-cphone').value);
-  localStorage.setItem('tlpos_stamp_officers',document.getElementById('adm-officers').value);
-  localStorage.setItem('tlpos_stamp_leaders',document.getElementById('adm-leaders').value);
-  localStorage.setItem('tlpos_stamp_members',document.getElementById('adm-members').value);
+  saveNameEditorsToStorage();
   autoBackupNow('settings');
   Swal.fire('✅ Saved','Settings saved','success');
 }
