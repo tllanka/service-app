@@ -202,7 +202,8 @@ h4,h5,.stat-value,.reb,.keypad-btn{font-family:'Rajdhani',sans-serif;}
     <div class="col-6"><div class="sc sc4"><span class="si">🕐</span><span class="stat-value" id="st-stamp">0</span><span class="stat-label">Today Stamps</span></div></div>
   </div>
   <div class="d-grid gap-3 mb-3">
-    <button class="reb py-4" onclick="navTo('s-scan');setTimeout(startScanner,350);"><i class="fas fa-qrcode me-2"></i>QR SCANNER</button>
+    <button class="reb py-4" onclick="navTo('s-scan');setTimeout(()=>startScanner('choice'),350);"><i class="fas fa-qrcode me-2"></i>QR SCANNER</button>
+    <button class="reb-grn py-3" onclick="startStampScan()"><i class="fas fa-calendar-check me-2"></i>STAMPING — QR SCAN</button>
     <div class="row g-3">
       <div class="col-6"><button class="qb" onclick="navTo('s-reg')"><span class="qi">👤</span>Register</button></div>
       <div class="col-6"><button class="qb" onclick="navTo('s-list');loadDir();"><span class="qi">📋</span>Directory</button></div>
@@ -231,8 +232,8 @@ h4,h5,.stat-value,.reb,.keypad-btn{font-family:'Rajdhani',sans-serif;}
     <h6 class="fw-bold mb-3 text-center" style="color:var(--p);letter-spacing:1px;">CUSTOMER REGISTRATION</h6>
     <div class="fg"><span class="fl">Customer Name *</span><input type="text" id="rg-name" class="fc" placeholder="පාරිභෝගික නම"></div>
     <div class="row g-2 mb-0">
-      <div class="col-6 fg"><span class="fl">Phone *</span><input type="text" id="rg-phone" class="fc" placeholder="දුරකථනය" readonly onclick="openKp('rg-phone')" style="cursor:pointer;"></div>
-      <div class="col-6 fg"><span class="fl">NIC</span><input type="text" id="rg-nic" class="fc" placeholder="NIC"></div>
+      <div class="col-6 fg"><span class="fl">Phone *</span><input type="text" id="rg-phone" class="fc" placeholder="දුරකථනය" readonly onclick="openKp('rg-phone','phone')" style="cursor:pointer;"></div>
+      <div class="col-6 fg"><span class="fl">NIC</span><input type="text" id="rg-nic" class="fc" placeholder="NIC" readonly onclick="openKp('rg-nic','nic')" style="cursor:pointer;text-transform:uppercase;"></div>
     </div>
     <!-- Address 2 fields -->
     <div class="fg"><span class="fl">Address Line 1 (Street / Lane)</span><input type="text" id="rg-addr1" class="fc" placeholder="No. 12, Main Street, Galle Road"></div>
@@ -319,8 +320,8 @@ h4,h5,.stat-value,.reb,.keypad-btn{font-family:'Rajdhani',sans-serif;}
       <div class="col-12 fg"><span class="fl">Customer Name</span><input type="text" id="svc-name" class="fc" placeholder="Customer Name"></div>
     </div>
     <div class="row g-2">
-      <div class="col-6 fg"><span class="fl">Phone</span><input type="text" id="svc-phone" class="fc" placeholder="Phone" readonly onclick="openKp('svc-phone')" style="cursor:pointer;"></div>
-      <div class="col-6 fg"><span class="fl">NIC / ID</span><input type="text" id="svc-nic" class="fc" placeholder="NIC"></div>
+      <div class="col-6 fg"><span class="fl">Phone</span><input type="text" id="svc-phone" class="fc" placeholder="Phone" readonly onclick="openKp('svc-phone','phone')" style="cursor:pointer;"></div>
+      <div class="col-6 fg"><span class="fl">NIC / ID</span><input type="text" id="svc-nic" class="fc" placeholder="NIC" readonly onclick="openKp('svc-nic','nic')" style="cursor:pointer;text-transform:uppercase;"></div>
     </div>
     <!-- Address 2 fields -->
     <div class="fg"><span class="fl">Address Line 1</span><input type="text" id="svc-addr1" class="fc" placeholder="Street / Lane"></div>
@@ -366,7 +367,14 @@ h4,h5,.stat-value,.reb,.keypad-btn{font-family:'Rajdhani',sans-serif;}
       </div>
     </div>
     <div id="stamp-scales-list"></div>
-    <button class="reb-grn w-100 py-3 mt-2" onclick="saveStamp()"><i class="fas fa-check-circle me-2"></i>SAVE STAMP RECORD</button>
+    <div class="fg mt-3" id="stamp-note-wrap" style="display:none;">
+      <span class="fl">📝 UN STAMP REASON / NOTE</span>
+      <textarea id="stamp-note" class="fc" rows="3" placeholder="Un stamp වුණු scale සඳහා හේතුව ලියන්න..."></textarea>
+    </div>
+    <div class="row g-2 mt-2">
+      <div class="col-6"><button class="reb-grn w-100 py-3" onclick="saveStamp()"><i class="fas fa-check-circle me-2"></i>OK</button></div>
+      <div class="col-6"><button class="reb-acc w-100 py-3" onclick="cancelStamp()"><i class="fas fa-times me-2"></i>CANCEL</button></div>
+    </div>
   </div>
 </div>
 
@@ -422,7 +430,7 @@ h4,h5,.stat-value,.reb,.keypad-btn{font-family:'Rajdhani',sans-serif;}
 <!-- Bottom Nav -->
 <nav class="bnav">
   <button class="ni active" id="n-home" onclick="navTo('s-home')"><i class="fas fa-home"></i><span>Home</span></button>
-  <button class="ni" id="n-scan" onclick="navTo('s-scan');setTimeout(startScanner,350);"><i class="fas fa-qrcode"></i><span>Scan</span></button>
+  <button class="ni" id="n-scan" onclick="navTo('s-scan');setTimeout(()=>startScanner('choice'),350);"><i class="fas fa-qrcode"></i><span>Scan</span></button>
   <button class="ni" id="n-reg" onclick="navTo('s-reg')"><i class="fas fa-user-plus"></i><span>Register</span></button>
   <button class="ni" id="n-list" onclick="navTo('s-list');loadDir();"><i class="fas fa-address-book"></i><span>List</span></button>
   <button class="ni" id="n-rpt" onclick="navTo('s-reports')"><i class="fas fa-chart-bar"></i><span>Reports</span></button>
@@ -431,13 +439,14 @@ h4,h5,.stat-value,.reb,.keypad-btn{font-family:'Rajdhani',sans-serif;}
 <!-- Keypad -->
 <div class="ko" id="kp-overlay" onclick="closeKpBg(event)">
   <div class="kp">
-    <div style="font-weight:700;color:var(--p);font-size:13px;letter-spacing:1px;margin-bottom:10px;">📱 ENTER PHONE NUMBER</div>
+    <div id="kp-title" style="font-weight:700;color:var(--p);font-size:13px;letter-spacing:1px;margin-bottom:10px;">📱 ENTER PHONE NUMBER</div>
     <div class="kd" id="kp-disp">_</div>
     <div class="kg">
       <button class="keypad-btn" onclick="kpP('1')">1</button><button class="keypad-btn" onclick="kpP('2')">2</button><button class="keypad-btn" onclick="kpP('3')">3</button>
       <button class="keypad-btn" onclick="kpP('4')">4</button><button class="keypad-btn" onclick="kpP('5')">5</button><button class="keypad-btn" onclick="kpP('6')">6</button>
       <button class="keypad-btn" onclick="kpP('7')">7</button><button class="keypad-btn" onclick="kpP('8')">8</button><button class="keypad-btn" onclick="kpP('9')">9</button>
-      <button class="keypad-btn bc" onclick="kpClr()">CLR</button><button class="keypad-btn" onclick="kpP('0')">0</button><button class="keypad-btn bd" onclick="kpDel()">⌫</button>
+      <button class="keypad-btn nic-key" id="kp-v-btn" onclick="kpP('V')" style="display:none;">V</button><button class="keypad-btn nic-key" id="kp-x-btn" onclick="kpP('X')" style="display:none;">X</button><button class="keypad-btn" onclick="kpP('0')">0</button>
+      <button class="keypad-btn bc" onclick="kpClr()">CLR</button><button class="keypad-btn bd" onclick="kpDel()">⌫</button><button class="keypad-btn" onclick="kpDone()">OK</button>
     </div>
     <button class="reb w-100 mt-3 py-3" onclick="kpDone()"><i class="fas fa-check me-2"></i>CONFIRM</button>
   </div>
@@ -474,7 +483,7 @@ db.version(3).stores({
 });
 
 let gps="", html5QrCode=null, scanning=false;
-let kpTgt=null, kpVal="";
+let kpTgt=null, kpVal="", kpMode="phone", scanMode="choice";
 let curInv=null;
 let stampCust=null, stampChecks={};
 
@@ -596,20 +605,72 @@ function addScaleRow(){
     </div>`);
 }
 
+
+function normTxt(v){return String(v||'').trim().replace(/\s+/g,' ').toUpperCase();}
+function sameCustomerName(a,b){return normTxt(a)===normTxt(b);}
+function scaleKey(s){return {model:normTxt(s.model), serial:normTxt(s.serial)};}
+function resetCustomerRegistrationForm(){
+  ['rg-name','rg-phone','rg-nic','rg-addr1','rg-addr2'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  gps='';
+  const gs=document.getElementById('gps-status'); if(gs) gs.innerText='';
+  document.getElementById('scales-list').innerHTML=`
+      <div class="sb">
+        <input type="text" class="fc s-model mb-2" placeholder="Model">
+        <div class="row g-2">
+          <div class="col-6"><input type="text" class="fc s-serial" placeholder="Serial No."></div>
+          <div class="col-6 ww"><input type="text" class="fc s-weight" placeholder="Weight" oninput="fmtW(this)"><span class="kb">kg</span></div>
+        </div>
+      </div>`;
+}
+async function validateNewCustomer(name,nic,scales){
+  const all=await db.customers.toArray();
+  const nNic=normTxt(nic);
+  if(nNic){
+    const nicOwner=all.find(c=>normTxt(c.nic)===nNic);
+    if(nicOwner && !sameCustomerName(nicOwner.name,name)){
+      return {ok:false,title:'Duplicate NIC',msg:`මෙම NIC අංකය දැනටමත් ${nicOwner.name} නමින් register කර ඇත.`};
+    }
+    if(nicOwner){
+      return {ok:false,title:'Duplicate NIC',msg:`මෙම NIC අංකය දැනටමත් register කර ඇත: ${nicOwner.name}`};
+    }
+  }
+  const seen={};
+  for(const s of scales){
+    const k=scaleKey(s);
+    if(!k.serial) continue;
+    const ownKey=(k.model||'NO_MODEL')+'|'+k.serial;
+    if(seen[ownKey]) return {ok:false,title:'Duplicate Scale',msg:`මෙම form එකේම එකම Model + Serial දෙවරක් දමා ඇත: ${s.model||'-'} / ${s.serial}`};
+    seen[ownKey]=true;
+    for(const c of all){
+      for(const old of (c.scales||[])){
+        const ok=scaleKey(old);
+        if(ok.serial && ok.serial===k.serial && (!k.model || !ok.model || ok.model===k.model)){
+          return {ok:false,title:'Scale Already Registered',msg:`මෙම scale serial number එක දැනටමත් ${c.name} ට register කර ඇත.\nModel: ${old.model||'-'}\nSerial: ${old.serial||'-'}`};
+        }
+      }
+    }
+  }
+  return {ok:true};
+}
+
 // ════ SAVE CUSTOMER ════
 async function saveCustomer(){
-  const name=document.getElementById('rg-name').value;
-  const phone=document.getElementById('rg-phone').value;
+  const name=document.getElementById('rg-name').value.trim();
+  const phone=document.getElementById('rg-phone').value.trim();
+  const nic=document.getElementById('rg-nic').value.trim().toUpperCase();
   if(!name||!phone) return Swal.fire('Error','Name and phone required','warning');
   let scales=[];
   document.querySelectorAll('#scales-list .sb').forEach(box=>{
-    const w=box.querySelector('.s-weight').value;
-    scales.push({model:box.querySelector('.s-model').value,serial:box.querySelector('.s-serial').value,weight:w?w+' kg':''});
+    const model=box.querySelector('.s-model').value.trim();
+    const serial=box.querySelector('.s-serial').value.trim();
+    const w=box.querySelector('.s-weight').value.trim();
+    if(model||serial||w) scales.push({model,serial,weight:w?w+' kg':''});
   });
+  const valid=await validateNewCustomer(name,nic,scales);
+  if(!valid.ok) return Swal.fire(valid.title,valid.msg,'warning');
   const qrid="CUST-"+Date.now();
   await db.customers.add({
-    qr_id:qrid,name,phone,
-    nic:document.getElementById('rg-nic').value,
+    qr_id:qrid,name,phone,nic,
     addr1:document.getElementById('rg-addr1').value,
     addr2:document.getElementById('rg-addr2').value,
     gps,scales
@@ -621,7 +682,8 @@ async function saveCustomer(){
   document.getElementById('qrcode-box').innerHTML='';
   new QRCode(document.getElementById('qrcode-box'),{text:qrid,width:190,height:190,correctLevel:QRCode.CorrectLevel.H});
   setTimeout(overlayLogo,400);
-  Swal.fire('✅ Registered',name+' added!','success');
+  resetCustomerRegistrationForm();
+  Swal.fire('✅ Registered',name+' added! New customer registration form is ready.','success');
   updateStats();
   document.getElementById('qr-result-area').scrollIntoView({behavior:'smooth'});
 }
@@ -640,7 +702,8 @@ function overlayLogo(){
 }
 
 // ════ SCANNER ════
-async function startScanner(){
+async function startScanner(mode='choice'){
+  scanMode=mode||'choice';
   if(scanning)return;
   const sb=document.getElementById('start-btn'),se=document.getElementById('scan-err'),ss=document.getElementById('ssb');
   try{
@@ -675,8 +738,14 @@ async function stopScanner(){
 }
 async function handleScan(qrid){
   const cust=await db.customers.where('qr_id').equals(qrid).first();
-  if(!cust){Swal.fire('Error','Invalid QR Code','error').then(()=>startScanner());return;}
+  if(!cust){Swal.fire('Error','Invalid QR Code','error').then(()=>startScanner(scanMode));return;}
+  if(scanMode==='stamp'){openStampPage(cust);return;}
   showChoiceModal(cust);
+}
+function startStampScan(){
+  scanMode='stamp';
+  navTo('s-scan');
+  setTimeout(()=>startScanner('stamp'),350);
 }
 
 // ════ SCAN CHOICE MODAL ════
@@ -735,44 +804,65 @@ function openStampPage(cust){
   document.getElementById('stamp-cust-name').innerText=cust.name;
   document.getElementById('stamp-cust-info').innerHTML=
     `📞 ${cust.phone||'-'}${cust.nic?' &nbsp;|&nbsp; 🪪 '+cust.nic:''}${(cust.addr1||cust.addr2)?'<br>📍 '+(cust.addr1?cust.addr1+', ':'')+(cust.addr2||''):''}`;
+  const note=document.getElementById('stamp-note'); if(note) note.value='';
   const scales=cust.scales||[];
   const list=document.getElementById('stamp-scales-list');
   if(!scales.length){
     list.innerHTML='<div class="text-center text-muted py-3" style="font-size:13px;">No scales registered for this customer.</div>';
-    // default stamp with no scale
     stampChecks['all']=true;
+    updateStampNoteBox();
     navTo('s-stamp');return;
   }
-  scales.forEach((s,i)=>{
-    stampChecks[i]=true;// default all checked
-  });
+  scales.forEach((s,i)=>{stampChecks[i]=true;});
   list.innerHTML=scales.map((s,i)=>`
     <div class="stamp-scale-item stamped" id="ssi-${i}" onclick="toggleStampCheck(${i})">
       <div class="stamp-check checked" id="sc-${i}"><i class="fas fa-check" style="font-size:13px;"></i></div>
       <div class="stamp-scale-info">
-        <div class="sm">${s.model||'Scale '+(i+1)}</div>
+        <div class="sm">${s.model||'Scale '+(i+1)} <span id="st-badge-${i}" style="float:right;font-size:10px;background:#10b981;color:white;border-radius:20px;padding:2px 8px;">STAMP</span></div>
         <div class="ss">Serial: ${s.serial||'-'} &nbsp;|&nbsp; ${s.weight||'-'}</div>
       </div>
     </div>`).join('');
+  updateStampNoteBox();
   navTo('s-stamp');
 }
 
-function toggleStampCheck(i){
-  stampChecks[i]=!stampChecks[i];
+function setStampVisual(i,checked){
   const item=document.getElementById('ssi-'+i);
   const chk=document.getElementById('sc-'+i);
-  if(stampChecks[i]){
+  const badge=document.getElementById('st-badge-'+i);
+  if(!item||!chk) return;
+  if(checked){
     item.className='stamp-scale-item stamped';
     chk.className='stamp-check checked';chk.innerHTML='<i class="fas fa-check" style="font-size:13px;"></i>';
+    if(badge){badge.innerText='STAMP';badge.style.background='#10b981';}
   } else {
     item.className='stamp-scale-item unstamped';
     chk.className='stamp-check';chk.innerHTML='';
+    if(badge){badge.innerText='UN STAMP';badge.style.background='#dc2626';}
   }
+}
+function hasUnstamped(){
+  if(!stampCust) return false;
+  return (stampCust.scales||[]).some((_,i)=>!stampChecks[i]);
+}
+function updateStampNoteBox(){
+  const wrap=document.getElementById('stamp-note-wrap');
+  if(wrap) wrap.style.display=hasUnstamped()?'block':'none';
+}
+function toggleStampCheck(i){
+  stampChecks[i]=!stampChecks[i];
+  setStampVisual(i,stampChecks[i]);
+  updateStampNoteBox();
 }
 function stampSelectAll(v){
   if(!stampCust) return;
   const scales=stampCust.scales||[];
-  scales.forEach((_,i)=>{stampChecks[i]=v;toggleStampCheck(i);if(v){stampChecks[i]=true;const item=document.getElementById('ssi-'+i);const chk=document.getElementById('sc-'+i);if(item){item.className='stamp-scale-item stamped';chk.className='stamp-check checked';chk.innerHTML='<i class="fas fa-check" style="font-size:13px;"></i>';}}});
+  scales.forEach((_,i)=>{stampChecks[i]=v;setStampVisual(i,v);});
+  updateStampNoteBox();
+}
+function cancelStamp(){
+  stampCust=null; stampChecks={}; scanMode='choice';
+  navTo('s-home');
 }
 async function saveStamp(){
   if(!stampCust) return;
@@ -786,13 +876,18 @@ async function saveStamp(){
       else unstampedScales.push(label);
     });
   }
+  const reason=(document.getElementById('stamp-note')?.value||'').trim();
+  if(unstampedScales.length && !reason){
+    return Swal.fire('Note Required','UN STAMP ලෙස තියෙන scale සඳහා හේතුව/note එක ලියන්න.','warning');
+  }
   await db.logs.add({
     cust_id:stampCust.qr_id,cust_name:stampCust.name,
     date:new Date().toISOString(),amount:0,type:'Stamp',
-    notes:`Stamped: ${stampedScales.join(', ')}${unstampedScales.length?' | Not stamped: '+unstampedScales.join(', '):''}`,
-    stamp_scales:JSON.stringify({stamped:stampedScales,unstamped:unstampedScales})
+    notes:`Stamped: ${stampedScales.join(', ')}${unstampedScales.length?' | Un Stamp: '+unstampedScales.join(', ')+' | Reason: '+reason:''}`,
+    stamp_scales:JSON.stringify({stamped:stampedScales,unstamped:unstampedScales,reason})
   });
   Swal.fire('✅ Stamp Saved',`Stamped ${stampedScales.length} scale(s) for ${stampCust.name}`,'success');
+  scanMode='choice';
   navTo('s-home');updateStats();
 }
 
@@ -1105,10 +1200,24 @@ function lockAdm(){
 }
 
 // ════ KEYPAD ════
-function openKp(tid){kpTgt=tid;kpVal=document.getElementById(tid).value||'';document.getElementById('kp-disp').innerText=kpVal||'_';document.getElementById('kp-overlay').classList.add('open');}
+function openKp(tid,mode='phone'){
+  kpTgt=tid;kpMode=mode;kpVal=(document.getElementById(tid).value||'').toUpperCase();
+  document.getElementById('kp-title').innerText=mode==='nic'?'🪪 ENTER NIC NUMBER':'📱 ENTER PHONE NUMBER';
+  document.querySelectorAll('.nic-key').forEach(b=>b.style.display=mode==='nic'?'block':'none');
+  document.getElementById('kp-disp').innerText=kpVal||'_';
+  document.getElementById('kp-overlay').classList.add('open');
+}
 function closeKpBg(e){if(e.target===document.getElementById('kp-overlay'))closeKp();}
 function closeKp(){document.getElementById('kp-overlay').classList.remove('open');}
-function kpP(v){if(kpVal.length>=15)return;kpVal+=v;document.getElementById('kp-disp').innerText=kpVal;}
+function kpP(v){
+  if(kpMode==='phone'){
+    if(!/^[0-9]$/.test(v)||kpVal.length>=10)return;
+  } else {
+    if(!/^[0-9VX]$/.test(v)||kpVal.length>=12)return;
+    if((v==='V'||v==='X') && /[VX]/.test(kpVal)) return;
+  }
+  kpVal+=v;document.getElementById('kp-disp').innerText=kpVal;
+}
 function kpDel(){kpVal=kpVal.slice(0,-1);document.getElementById('kp-disp').innerText=kpVal||'_';}
 function kpClr(){kpVal='';document.getElementById('kp-disp').innerText='_';}
 function kpDone(){if(kpTgt)document.getElementById(kpTgt).value=kpVal;closeKp();}
