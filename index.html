@@ -196,6 +196,18 @@ h4,h5,.stat-value,.reb,.keypad-btn{font-family:'Rajdhani',sans-serif;}
 .map-stat{background:linear-gradient(135deg,#064C57,#0a6b7a);color:white;border-radius:14px;padding:10px;text-align:center;font-family:'Rajdhani',sans-serif;font-weight:700;}
 .map-stat small{display:block;font-family:'Inter',sans-serif;font-size:9px;opacity:.8;letter-spacing:1px;}
 
+/* Area Map Legend */
+.map-legend-box{margin-top:12px;background:linear-gradient(145deg,#ffffff,#e8edf4);border-radius:18px;padding:12px;box-shadow:5px 5px 12px var(--sd),-5px -5px 12px var(--sl);border:1px solid rgba(6,76,87,.12);}
+.map-legend-title{display:flex;align-items:center;gap:7px;color:#064C57;font-weight:900;font-size:12px;letter-spacing:1px;text-transform:uppercase;margin-bottom:9px;}
+.map-legend-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;}
+.map-legend-item{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.55);border-radius:13px;padding:9px 8px;border:1px solid rgba(6,76,87,.08);box-shadow:inset 1px 1px 3px rgba(184,190,197,.35),inset -1px -1px 3px rgba(255,255,255,.75);}
+.map-legend-pin{width:18px;height:18px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid white;box-shadow:0 3px 8px rgba(0,0,0,.22);flex-shrink:0;position:relative;}
+.map-legend-pin::after{content:'';position:absolute;width:5px;height:5px;border-radius:50%;background:white;left:4.5px;top:4.5px;}
+.map-legend-text{line-height:1.15;}
+.map-legend-text b{display:block;font-size:11px;color:#0f172a;}
+.map-legend-text small{display:block;font-size:9px;color:#64748b;font-weight:700;margin-top:1px;}
+@media(max-width:390px){.map-legend-grid{grid-template-columns:1fr;}}
+
 
 /* Beautiful map tag marker + small popup */
 .tlpos-map-pin{background:transparent!important;border:none!important;}
@@ -304,6 +316,16 @@ h4,h5,.stat-value,.reb,.keypad-btn{font-family:'Rajdhani',sans-serif;}
       <div class="map-stat"><span id="map-total-markers">0</span><small>GPS MARKERS</small></div>
     </div>
     <div id="area-map" class="map-box"></div>
+
+    <div class="map-legend-box">
+      <div class="map-legend-title"><i class="fas fa-tags"></i> Map Tag Color Guide</div>
+      <div class="map-legend-grid">
+        <div class="map-legend-item"><span class="map-legend-pin" style="background:#2563eb;"></span><span class="map-legend-text"><b>New Register</b><small>අලුතින් register කළ customer</small></span></div>
+        <div class="map-legend-item"><span class="map-legend-pin" style="background:#f59e0b;"></span><span class="map-legend-text"><b>Stamp Due Soon</b><small>මාස 1.5 / දවස් 45 පසු</small></span></div>
+        <div class="map-legend-item"><span class="map-legend-pin" style="background:#10b981;"></span><span class="map-legend-text"><b>Stamped</b><small>Stamp කරලා තියෙන customer</small></span></div>
+        <div class="map-legend-item"><span class="map-legend-pin" style="background:#dc2626;"></span><span class="map-legend-text"><b>Renewal Due</b><small>Stamp කළ දින සිට මාස 11 පසු</small></span></div>
+      </div>
+    </div>
     <div class="map-mini-list" id="area-map-list"></div>
     <small class="text-muted d-block mt-2" style="font-size:10px;line-height:1.5;">GPS තියෙන customer records විතරක් map එකේ marker ලෙස පෙන්වයි. Base map tiles පෙන්වීමට internet අවශ්‍යයි.</small>
   </div>
