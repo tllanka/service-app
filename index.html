@@ -538,6 +538,7 @@ h4,h5,.stat-value,.reb,.keypad-btn{font-family:'Rajdhani',sans-serif;}
       <button class="rpt-tab" id="rt-stamp" onclick="setReportType('stamp')"><i class="fas fa-stamp me-1"></i>Stamp</button>
       <button class="rpt-tab" id="rt-invoices" onclick="setReportType('invoices')"><i class="fas fa-receipt me-1"></i>Invoices</button>
       <button class="rpt-tab" id="rt-customers" onclick="setReportType('customers')"><i class="fas fa-users me-1"></i>Customers</button>
+      <button class="rpt-tab" id="rt-renewal" onclick="setReportType('renewal')"><i class="fas fa-location-dot me-1" style="color:#dc2626;"></i>Red Tags</button>
     </div>
 
     <div class="rpt-sum-grid">
@@ -738,19 +739,50 @@ function dateFromCustomer(c){
   return new Date();
 }
 function daysBetween(a,b){return Math.floor((b.getTime()-a.getTime())/86400000);}
+function stampIndexKeysFromLog(l){
+  const keys=[];
+  if(l.cust_id) keys.push('id:'+String(l.cust_id).trim());
+  if(l.phone) keys.push('phone:'+String(l.phone).trim());
+  if(l.nic) keys.push('nic:'+String(l.nic).trim().toUpperCase());
+  if(l.cust_name) keys.push('name:'+String(l.cust_name).trim().toLowerCase());
+  return keys.filter(Boolean);
+}
+function stampIndexKeysFromCustomer(c){
+  const keys=[];
+  if(c.qr_id) keys.push('id:'+String(c.qr_id).trim());
+  if(c.phone) keys.push('phone:'+String(c.phone).trim());
+  if(c.nic) keys.push('nic:'+String(c.nic).trim().toUpperCase());
+  if(c.name) keys.push('name:'+String(c.name).trim().toLowerCase());
+  return keys.filter(Boolean);
+}
 async function getLatestStampIndex(){
   const logs=await db.logs.toArray().catch(()=>[]);
   const idx={};
-  logs.filter(l=>l.type==='Stamp' && (l.status||'STAMP')==='STAMP').forEach(l=>{
-    const key=String(l.cust_id||''); if(!key) return;
+  logs.forEach(l=>{
+    if(l.type!=='Stamp') return;
+    const st=String(l.status || 'STAMP').toUpperCase().trim();
+    // Only real STAMP records make the map green/red. UN STAMP must not reset the due date.
+    if(st!=='STAMP') return;
     const d=new Date(l.date||''); if(isNaN(d)) return;
-    if(!idx[key] || d>idx[key]) idx[key]=d;
+    stampIndexKeysFromLog(l).forEach(key=>{
+      if(!idx[key] || d>idx[key]) idx[key]=d;
+    });
   });
   return idx;
 }
+function latestStampForCustomer(c, stampIndex){
+  let latest=null;
+  stampIndexKeysFromCustomer(c).forEach(key=>{
+    const d=stampIndex[key];
+    if(d && (!latest || d>latest)) latest=d;
+  });
+  return latest;
+}
 function markerStatusForCustomer(c, stampIndex){
   const now=new Date();
-  const latest=stampIndex[String(c.qr_id||'')];
+  const latest=latestStampForCustomer(c, stampIndex);
+  // Important priority: once stamped, registration-age rule is ignored.
+  // Example: registered and stamped on the same day => after 45 days it stays GREEN, not YELLOW.
   if(latest){
     const ds=daysBetween(latest,now);
     if(ds>=335) return {color:'#dc2626', label:'RED', text:'Stamp කළ දින සිට මාස 11 ඉවරයි / renewal due', emoji:'🔴'};
@@ -1684,7 +1716,29 @@ function setReportType(t){activeReportType=t; document.querySelectorAll('.rpt-ta
 async function getReportRows(type){
   const from=document.getElementById('rpt-from')?.value||'', to=document.getElementById('rpt-to')?.value||'';
   let rows=[];
-  if(type==='customers'){
+  if(type==='renewal'){
+    const customers=await db.customers.toArray();
+    const stampIndex=await getLatestStampIndex();
+    rows=customers.map(c=>{
+      const latest=latestStampForCustomer(c,stampIndex);
+      const st=markerStatusForCustomer(c,stampIndex);
+      const scs=Array.isArray(c.scales)?c.scales:[];
+      return {c,latest,st,scs};
+    }).filter(x=>x.st && x.st.label==='RED').map(x=>({
+      'Customer Name':x.c.name||'-',
+      'Phone':x.c.phone||'-',
+      'NIC':x.c.nic||'-',
+      'Address':shortAddr(x.c.addr1,x.c.addr2)||'-',
+      'Area':x.c.addr2||'-',
+      'GPS':x.c.gps||'-',
+      'Scale Models':x.scs.map(s=>s.model||'-').join(', ')||'-',
+      'Serial Numbers':x.scs.map(s=>s.serial||'-').join(', ')||'-',
+      'KG':x.scs.map(s=>s.weight||'-').join(', ')||'-',
+      'Last Stamp Date':x.latest?new Date(x.latest).toLocaleDateString('en-GB'):'-',
+      'Days Since Stamp':x.latest?daysBetween(new Date(x.latest),new Date()):'-',
+      'Status':'RED TAG / RENEWAL DUE'
+    }));
+  }else if(type==='customers'){
     const customers=await db.customers.toArray();
     rows=customers.map(c=>({
       'Customer Name':c.name||'-','Phone':c.phone||'-','NIC':c.nic||'-','Address':shortAddr(c.addr1,c.addr2)||'-','Area':c.addr2||'-','GPS':c.gps||'-','Scales':Array.isArray(c.scales)?c.scales.length:0,'QR ID':c.qr_id||'-'
@@ -1714,24 +1768,25 @@ function reportColumns(type){
     service:['Time','Customer Name','Type','Amount','Notes'],
     stamp:['Time','Customer Name','Address','Area','Scale Model','Serial No','KG','Status','Officer','Leader','Member','Note'],
     invoices:['Time','Invoice No','Customer Name','Phone','Model','Serial','KG','Amount','Notes'],
-    customers:['Customer Name','Phone','NIC','Address','Area','GPS','Scales','QR ID']
+    customers:['Customer Name','Phone','NIC','Address','Area','GPS','Scales','QR ID'],
+    renewal:['Customer Name','Phone','NIC','Address','Area','GPS','Scale Models','Serial Numbers','KG','Last Stamp Date','Days Since Stamp','Status']
   }[type]||[];
 }
 async function renderReportTables(){
   const box=document.getElementById('rpt-table-box'); if(!box) return;
   const rows=await getReportRows(activeReportType); lastReportRows=rows;
   const cols=reportColumns(activeReportType);
-  const titleMap={service:'SERVICE REPORT',stamp:'STAMP REPORT',invoices:'INVOICE HISTORY',customers:'FULL CUSTOMER LIST'};
+  const titleMap={service:'SERVICE REPORT',stamp:'STAMP REPORT',invoices:'INVOICE HISTORY',customers:'FULL CUSTOMER LIST',renewal:'RED TAG / RENEWAL DUE LIST'};
   const title=document.getElementById('rpt-table-title'); if(title)title.innerText=titleMap[activeReportType]||'REPORT';
   document.getElementById('rpt-total').innerText=rows.length;
-  document.getElementById('rpt-stamp-total').innerText=activeReportType==='stamp'?rows.filter(r=>String(r.Status).toUpperCase()==='STAMP').length:'-';
+  document.getElementById('rpt-stamp-total').innerText=activeReportType==='stamp'?rows.filter(r=>String(r.Status).toUpperCase()==='STAMP').length:(activeReportType==='renewal'?rows.length:'-');
   const amt=rows.reduce((a,r)=>a+(Number(String(r.Amount||0).replace(/,/g,''))||0),0);
   document.getElementById('rpt-amount-total').innerText=(activeReportType==='service'||activeReportType==='invoices')?amt.toLocaleString():'-';
   if(!rows.length){box.innerHTML='<div class="rpt-empty">No records found for selected report/date/search.</div>';return;}
   const th=cols.map(c=>`<th>${esc(c)}</th>`).join('');
   const body=rows.map(r=>`<tr>${cols.map(c=>{
     let v=r[c]??'-';
-    if(c==='Status'){const cls=String(v).toUpperCase()==='UN STAMP'?'unstamp':'stamp'; v=`<span class="rpt-pill ${cls}">${esc(v)}</span>`;}
+    if(c==='Status'){const uv=String(v).toUpperCase(); const cls=uv.includes('RED TAG')?'danger':(uv==='UN STAMP'?'unstamp':'stamp'); v=`<span class="rpt-pill ${cls}">${esc(v)}</span>`;}
     else if(c==='Type'){v=`<span class="rpt-pill service">${esc(v)}</span>`;}
     else if(c==='Scales'){v=`<span class="rpt-pill info">${esc(v)}</span>`;}
     else v=esc(v);
