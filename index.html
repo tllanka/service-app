@@ -609,42 +609,96 @@ function parseGPSPoint(g){
   return {lat:parts[0], lng:parts[1]};
 }
 let areaMap=null, areaMarkers=[];
+
 function getAdminAreas(){
   const saved=listFromStorage('tlpos_map_areas');
   if(saved.length) return saved;
   return SL_CITIES.filter((v,i,a)=>a.indexOf(v)===i).slice(0,80);
 }
+function getLockedMapArea(){
+  const areas=listFromStorage('tlpos_map_areas');
+  return areas.length ? areas[0] : '__ALL__';
+}
 function fillAreaMapSelect(){
   const sel=document.getElementById('map-area-select'); if(!sel) return;
-  const old=sel.value;
+  const locked=getLockedMapArea();
+  if(locked!=='__ALL__'){
+    sel.innerHTML=`<option value="${esc(locked)}">${esc(locked)}</option>`;
+    sel.value=locked;
+    sel.disabled=true;
+    sel.style.opacity='1';
+    sel.title='Admin වල save කළ area එක lock කර ඇත';
+    return;
+  }
   const areas=getAdminAreas();
+  sel.disabled=false;
   sel.innerHTML='<option value="__ALL__">All Registered Areas</option>'+areas.map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join('');
-  if(old && [...sel.options].some(o=>o.value===old)) sel.value=old;
+  sel.value='__ALL__';
 }
 async function openAreaMapPage(){
   navTo('s-area-map');
   fillAreaMapSelect();
   setTimeout(refreshAreaMap,250);
 }
+function dateFromCustomer(c){
+  if(c.created_at){const d=new Date(c.created_at); if(!isNaN(d)) return d;}
+  const m=String(c.qr_id||'').match(/CUST-(\d{10,})/);
+  if(m){const d=new Date(parseInt(m[1],10)); if(!isNaN(d)) return d;}
+  return new Date();
+}
+function daysBetween(a,b){return Math.floor((b.getTime()-a.getTime())/86400000);}
+async function getLatestStampIndex(){
+  const logs=await db.logs.toArray().catch(()=>[]);
+  const idx={};
+  logs.filter(l=>l.type==='Stamp' && (l.status||'STAMP')==='STAMP').forEach(l=>{
+    const key=String(l.cust_id||''); if(!key) return;
+    const d=new Date(l.date||''); if(isNaN(d)) return;
+    if(!idx[key] || d>idx[key]) idx[key]=d;
+  });
+  return idx;
+}
+function markerStatusForCustomer(c, stampIndex){
+  const now=new Date();
+  const latest=stampIndex[String(c.qr_id||'')];
+  if(latest){
+    const ds=daysBetween(latest,now);
+    if(ds>=335) return {color:'#dc2626', label:'RED', text:'Stamp කළ දින සිට මාස 11 ඉවරයි / renewal due', emoji:'🔴'};
+    return {color:'#16a34a', label:'GREEN', text:'Stamped / valid', emoji:'🟢'};
+  }
+  const reg=dateFromCustomer(c);
+  const dr=daysBetween(reg,now);
+  if(dr>=45) return {color:'#f59e0b', label:'YELLOW', text:'Register කරලා මාස 1.5 ඉක්මවා ඇත / stamp due soon', emoji:'🟡'};
+  return {color:'#2563eb', label:'BLUE', text:'New registration', emoji:'🔵'};
+}
+function makeColorIcon(color){
+  if(typeof L==='undefined') return null;
+  return L.divIcon({
+    className:'tlpos-map-pin',
+    html:`<div style="width:20px;height:20px;border-radius:50%;background:${color};border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,.35);"></div>`,
+    iconSize:[20,20], iconAnchor:[10,10], popupAnchor:[0,-10]
+  });
+}
 async function refreshAreaMap(){
   const sel=document.getElementById('map-area-select'); if(!sel) return;
-  const area=sel.value||'__ALL__';
+  fillAreaMapSelect();
+  const area=getLockedMapArea();
   const customers=await db.customers.toArray();
+  const stampIndex=await getLatestStampIndex();
   const filtered=customers.filter(c=>{
     if(area==='__ALL__') return true;
     const city=(c.addr2||'').trim().toLowerCase();
     return city===area.toLowerCase() || city.includes(area.toLowerCase());
   });
-  const withGps=filtered.map(c=>({cust:c, pt:parseGPSPoint(c.gps)})).filter(x=>x.pt);
+  const withGps=filtered.map(c=>({cust:c, pt:parseGPSPoint(c.gps), st:markerStatusForCustomer(c,stampIndex)})).filter(x=>x.pt);
   document.getElementById('map-total-customers').innerText=filtered.length;
   document.getElementById('map-total-markers').innerText=withGps.length;
 
   const list=document.getElementById('area-map-list');
   if(list){
-    if(!filtered.length) list.innerHTML='<div class="text-center text-muted py-3" style="font-size:12px;">Selected area එකට customer records නැහැ.</div>';
+    if(!filtered.length) list.innerHTML='<div class="text-center text-muted py-3" style="font-size:12px;">Admin area එකට customer records නැහැ.</div>';
     else list.innerHTML=filtered.map(c=>{
-      const pt=parseGPSPoint(c.gps);
-      return `<div class="map-cust-card"><b>${esc(c.name||'-')}</b><br><span>${esc(shortAddress(c.addr1,c.addr2))}</span><br><small>${pt?'📍 '+esc(c.gps):'⚠️ GPS not saved'} &nbsp; | &nbsp; ${esc(c.phone||'')}</small></div>`;
+      const pt=parseGPSPoint(c.gps), st=markerStatusForCustomer(c,stampIndex);
+      return `<div class="map-cust-card" style="border-left-color:${st.color};"><b>${esc(c.name||'-')}</b> <span style="float:right;font-weight:900;color:${st.color};">${st.emoji}</span><br><span>${esc(shortAddress(c.addr1,c.addr2))}</span><br><small>${pt?'📍 '+esc(c.gps):'⚠️ GPS not saved'} &nbsp; | &nbsp; ${esc(c.phone||'')}</small><br><small style="color:${st.color};font-weight:800;">${esc(st.text)}</small></div>`;
     }).join('');
   }
 
@@ -659,9 +713,9 @@ async function refreshAreaMap(){
   areaMarkers.forEach(m=>areaMap.removeLayer(m)); areaMarkers=[];
   if(!withGps.length){ areaMap.setView([7.8731,80.7718],7); setTimeout(()=>areaMap.invalidateSize(),120); return; }
   const bounds=[];
-  withGps.forEach(({cust,pt})=>{
-    const marker=L.marker([pt.lat,pt.lng]).addTo(areaMap);
-    marker.bindPopup(`<b>${esc(cust.name||'-')}</b><br>${esc(shortAddress(cust.addr1,cust.addr2))}<br>Phone: ${esc(cust.phone||'-')}<br>GPS: ${esc(cust.gps||'-')}`);
+  withGps.forEach(({cust,pt,st})=>{
+    const marker=L.marker([pt.lat,pt.lng],{icon:makeColorIcon(st.color)}).addTo(areaMap);
+    marker.bindPopup(`<b>${esc(cust.name||'-')}</b><br>${esc(shortAddress(cust.addr1,cust.addr2))}<br>Phone: ${esc(cust.phone||'-')}<br>GPS: ${esc(cust.gps||'-')}<br><b style="color:${st.color};">${st.emoji} ${esc(st.text)}</b>`);
     areaMarkers.push(marker); bounds.push([pt.lat,pt.lng]);
   });
   if(bounds.length===1) areaMap.setView(bounds[0],15); else areaMap.fitBounds(bounds,{padding:[25,25]});
@@ -826,7 +880,7 @@ async function saveCustomer(){
     qr_id:qrid,name,phone,nic,
     addr1:document.getElementById('rg-addr1').value,
     addr2:document.getElementById('rg-addr2').value,
-    gps,scales
+    gps,scales,created_at:new Date().toISOString()
   });
   allCustomers=[];// reset cache
   document.getElementById('qr-result-area').style.display='block';
