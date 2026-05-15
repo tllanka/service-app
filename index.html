@@ -574,6 +574,18 @@ h4,h5,.stat-value,.reb,.keypad-btn{font-family:'Rajdhani',sans-serif;}
       <div class="fg"><span class="fl">📧 Report / Invoice Email Recipient</span><input type="email" id="adm-email" class="fc" placeholder="admin@example.com"></div>
       <div class="fg"><span class="fl">🏢 Company Name</span><input type="text" id="adm-company" class="fc" placeholder="Ceylon Weighing Machine Limited"></div>
       <div class="fg"><span class="fl">📞 Company Phone</span><input type="text" id="adm-cphone" class="fc" placeholder="+94 XX XXX XXXX"></div>
+      <div class="fg">
+        <span class="fl">🖨️ 58mm Bluetooth QR Printer</span>
+        <div class="mc" style="padding:12px;margin-bottom:0;background:rgba(6,76,87,.045);">
+          <button class="reb w-100 py-3" type="button" onclick="connectBtPrinter()"><i class="fas fa-bluetooth-b me-2"></i>CONNECT 58mm BLUETOOTH PRINTER</button>
+          <div class="d-flex gap-2 mt-2">
+            <button class="rebl" type="button" style="font-size:12px;" onclick="testBtPrinter()"><i class="fas fa-receipt me-1"></i>Test Print</button>
+            <button class="rebl" type="button" style="font-size:12px;" onclick="disconnectBtPrinter()"><i class="fas fa-plug-circle-xmark me-1"></i>Disconnect</button>
+          </div>
+          <small id="bt-printer-status" style="font-size:10px;color:#64748b;font-weight:700;display:block;margin-top:8px;">Printer not connected</small>
+          <small style="font-size:9px;color:#64748b;display:block;margin-top:4px;line-height:1.35;">Web Bluetooth support කරන BLE thermal printer නම් QR card direct print වෙයි. Classic Bluetooth printer නම් browser print fallback භාවිතා කරන්න.</small>
+        </div>
+      </div>
       <div class="fg"><span class="fl">🗺️ Area Map Areas</span><div id="adm-areas-box" class="name-list-box"></div><small class="text-muted" style="font-size:10px;">Example: Pelmadulla, Embilipitiya. Customer registration city එක මේ names එක්ක match කළාම map filter වෙයි.</small></div>
       <div class="fg"><span class="fl">👮 Stamp Officers</span><div id="adm-officers-box" class="name-list-box"></div></div>
       <div class="fg"><span class="fl">👥 Team Leaders</span><div id="adm-leaders-box" class="name-list-box"></div></div>
@@ -2029,6 +2041,149 @@ function printQR(){
     setTimeout(()=>pa.style.display='none',1500);
   }
 }
+
+
+// ══ 58mm BLUETOOTH THERMAL QR PRINTER PATCH ══
+let btPrinterDevice = null;
+let btPrinterServer = null;
+let btPrinterChar = null;
+const BT_PRINTER_SERVICES = [
+  '0000ffe0-0000-1000-8000-00805f9b34fb',
+  '0000ff00-0000-1000-8000-00805f9b34fb',
+  '000018f0-0000-1000-8000-00805f9b34fb',
+  '6e400001-b5a3-f393-e0a9-e50e24dcca9e'
+];
+function updateBtPrinterStatus(msg, ok=false){
+  const el=document.getElementById('bt-printer-status');
+  if(el){el.textContent=msg;el.style.color=ok?'#059669':'#64748b';}
+}
+async function connectBtPrinter(){
+  try{
+    if(!navigator.bluetooth){
+      Swal.fire('Bluetooth not supported','මෙම browser/device එක Web Bluetooth support කරන්නේ නැහැ. Chrome Android/Edge වගේ browser එකක try කරන්න. Classic Bluetooth printers direct web app එකෙන් connect නොවිය හැක.','warning');
+      return;
+    }
+    updateBtPrinterStatus('Searching Bluetooth printer...');
+    btPrinterDevice = await navigator.bluetooth.requestDevice({
+      acceptAllDevices:true,
+      optionalServices:BT_PRINTER_SERVICES
+    });
+    btPrinterDevice.addEventListener('gattserverdisconnected',()=>{
+      btPrinterServer=null;btPrinterChar=null;
+      updateBtPrinterStatus('Printer disconnected');
+    });
+    btPrinterServer = await btPrinterDevice.gatt.connect();
+    btPrinterChar = await findWritableBtCharacteristic(btPrinterServer);
+    if(!btPrinterChar) throw new Error('Writable Bluetooth characteristic not found');
+    localStorage.setItem('tlpos_bt_printer_name', btPrinterDevice.name || 'Bluetooth Printer');
+    updateBtPrinterStatus('Connected: '+(btPrinterDevice.name||'Bluetooth Printer'), true);
+    Swal.fire('✅ Printer Connected',(btPrinterDevice.name||'Bluetooth Printer')+' connected successfully.','success');
+  }catch(err){
+    console.error(err);
+    btPrinterChar=null;
+    updateBtPrinterStatus('Printer not connected');
+    Swal.fire('Printer connect failed','Printer එක BLE thermal printer එකක් නොවුණොත් browser එකෙන් direct connect වෙන්නේ නැහැ. එවිට PRINT QR CARD normal print fallback එකෙන් print කරන්න.\n\n'+(err.message||err),'warning');
+  }
+}
+async function findWritableBtCharacteristic(server){
+  const services = await server.getPrimaryServices();
+  for(const service of services){
+    let chars=[];
+    try{ chars = await service.getCharacteristics(); }catch(e){ continue; }
+    for(const ch of chars){
+      const p=ch.properties||{};
+      if(p.write || p.writeWithoutResponse) return ch;
+    }
+  }
+  return null;
+}
+async function disconnectBtPrinter(){
+  try{ if(btPrinterDevice && btPrinterDevice.gatt.connected) btPrinterDevice.gatt.disconnect(); }catch(e){}
+  btPrinterDevice=null;btPrinterServer=null;btPrinterChar=null;
+  updateBtPrinterStatus('Printer disconnected');
+}
+async function btWriteBytes(bytes){
+  if(!btPrinterChar) throw new Error('Printer not connected');
+  const data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  const chunkSize=180;
+  for(let i=0;i<data.length;i+=chunkSize){
+    const chunk=data.slice(i,i+chunkSize);
+    if(btPrinterChar.properties.writeWithoutResponse) await btPrinterChar.writeValueWithoutResponse(chunk);
+    else await btPrinterChar.writeValue(chunk);
+    await new Promise(r=>setTimeout(r,18));
+  }
+}
+function escText(s){ return new TextEncoder().encode(s); }
+function escConcat(parts){
+  let len=parts.reduce((a,p)=>a+p.length,0), out=new Uint8Array(len), off=0;
+  parts.forEach(p=>{out.set(p,off);off+=p.length;});
+  return out;
+}
+function qrCanvasToRasterBytes(canvas, maxWidth=360){
+  const srcW=canvas.width, srcH=canvas.height;
+  const scale=Math.min(maxWidth/srcW,1);
+  const w=Math.floor(srcW*scale), h=Math.floor(srcH*scale);
+  const tmp=document.createElement('canvas'); tmp.width=w; tmp.height=h;
+  const ctx=tmp.getContext('2d');
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h); ctx.drawImage(canvas,0,0,w,h);
+  const img=ctx.getImageData(0,0,w,h).data;
+  const bytesPerRow=Math.ceil(w/8);
+  const raster=new Uint8Array(bytesPerRow*h);
+  for(let y=0;y<h;y++){
+    for(let x=0;x<w;x++){
+      const i=(y*w+x)*4;
+      const lum=0.299*img[i]+0.587*img[i+1]+0.114*img[i+2];
+      if(lum<160) raster[y*bytesPerRow+(x>>3)] |= (0x80>>(x&7));
+    }
+  }
+  return escConcat([
+    new Uint8Array([0x1d,0x76,0x30,0x00,bytesPerRow&255,(bytesPerRow>>8)&255,h&255,(h>>8)&255]),
+    raster
+  ]);
+}
+async function printQrViaBluetooth(){
+  const canvas=document.querySelector('#qrcode-box canvas');
+  const cust=(document.getElementById('p-cust-name')?.innerText||'CUSTOMER').trim();
+  const qrid=(document.getElementById('p-qr-id')?.innerText||'').trim();
+  if(!canvas) throw new Error('QR canvas not found');
+  const init=new Uint8Array([0x1b,0x40]);
+  const center=new Uint8Array([0x1b,0x61,0x01]);
+  const left=new Uint8Array([0x1b,0x61,0x00]);
+  const boldOn=new Uint8Array([0x1b,0x45,0x01]);
+  const boldOff=new Uint8Array([0x1b,0x45,0x00]);
+  const feedCut=new Uint8Array([0x0a,0x0a,0x0a,0x1d,0x56,0x42,0x00]);
+  const qr=qrCanvasToRasterBytes(canvas,360);
+  const body=escConcat([
+    init,center,boldOn,escText('CEYLON WEIGHING MACHINE LTD\n'),boldOff,
+    escText(cust+'\n\n'),qr,escText('\n'),
+    escText('TLpos Pro Service Manager\n'),escText(qrid+'\n'),left,feedCut
+  ]);
+  await btWriteBytes(body);
+}
+async function testBtPrinter(){
+  try{
+    if(!btPrinterChar) return Swal.fire('Printer not connected','මුලින් CONNECT 58mm BLUETOOTH PRINTER press කරන්න.','info');
+    const test=escConcat([new Uint8Array([0x1b,0x40,0x1b,0x61,0x01,0x1b,0x45,0x01]),escText('TLPOS PRO\n'),new Uint8Array([0x1b,0x45,0x00]),escText('58mm Bluetooth printer test\n'),escText(new Date().toLocaleString()+'\n\n\n')]);
+    await btWriteBytes(test);
+    Swal.fire('✅ Test Sent','Printer test print sent.','success');
+  }catch(e){ Swal.fire('Test failed',e.message||String(e),'error'); }
+}
+const tlposBrowserPrintQR = window.printQR;
+window.printQR = async function(){
+  if(btPrinterChar){
+    try{ await printQrViaBluetooth(); return Swal.fire('✅ Printed','QR card sent to Bluetooth printer.','success'); }
+    catch(e){
+      console.error(e);
+      const r=await Swal.fire({title:'Bluetooth print failed',text:'Normal browser print එකෙන් print කරන්නද?',icon:'warning',showCancelButton:true,confirmButtonText:'Yes, browser print'});
+      if(!r.isConfirmed) return;
+    }
+  }
+  if(typeof tlposBrowserPrintQR==='function') return tlposBrowserPrintQR();
+};
+document.addEventListener('DOMContentLoaded',()=>{
+  const saved=localStorage.getItem('tlpos_bt_printer_name');
+  if(saved) updateBtPrinterStatus('Saved printer: '+saved+' (press Connect to use)',false);
+});
 
 </script>
 </body>
