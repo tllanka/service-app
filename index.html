@@ -2306,6 +2306,78 @@ function customerQrPrintHtml(cust,qrDataUrl){const esc=s=>String(s||'').replace(
 async function printCustomerQrFromAdmin(cust){const canvas=await makeQrCanvasForText(cust.qr_id,220);if(!canvas)throw new Error('QR generate failed');if(btPrinterChar){try{const init=new Uint8Array([0x1b,0x40]);const center=new Uint8Array([0x1b,0x61,0x01]);const left=new Uint8Array([0x1b,0x61,0x00]);const boldOn=new Uint8Array([0x1b,0x45,0x01]);const boldOff=new Uint8Array([0x1b,0x45,0x00]);const feedCut=new Uint8Array([0x0a,0x0a,0x0a,0x1d,0x56,0x42,0x00]);const qr=qrCanvasToRasterBytes(canvas,300);const body=escConcat([init,center,boldOn,escText('CEYLON WEIGHING MACHINE LTD\n'),boldOff,escText(String(cust.name||'CUSTOMER')+'\n\n'),qr,escText('\n'),escText('TLpos Pro Service Manager\n'),escText(String(cust.qr_id||'')+'\n'),left,feedCut]);await btWriteBytes(body);return;}catch(e){console.warn('BT reprint failed, browser fallback',e);}}const qrDataUrl=canvas.toDataURL('image/png');const content=customerQrPrintHtml(cust,qrDataUrl);const w=window.open('','_blank','width=400,height=520');if(w){w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{margin:0;padding:20px;background:white;text-align:center;}</style></head><body>${content}<script>window.onload=function(){setTimeout(function(){window.print();window.close();},250);}<`+`/script></body></html>`);w.document.close();}else{const pa=document.getElementById('inv-print-area');pa.innerHTML='<div style="background:white;padding:20px;text-align:center;">'+content+'</div>';pa.style.display='block';window.print();setTimeout(()=>pa.style.display='none',1500);}}
 async function confirmAdminQrReprint(qrid){const cust=await db.customers.where('qr_id').equals(qrid).first();if(!cust)return Swal.fire('Not found','Customer QR record හමු නොවුණා.','warning');const res=await Swal.fire({title:'QR print කරන්නද?',html:`<b>${String(cust.name||'Customer')}</b><br><small>${String(cust.phone||'')} • ${String(cust.qr_id||'')}</small>`,icon:'question',showCancelButton:true,confirmButtonText:'Print QR',cancelButtonText:'Cancel'});if(!res.isConfirmed)return;try{await printCustomerQrFromAdmin(cust);Swal.fire('✅ Sent','QR print command sent.','success');}catch(e){Swal.fire('Print error',e.message||String(e),'error');}}
 document.addEventListener('DOMContentLoaded',()=>{v14AddAdminPages();const qbtn=document.getElementById('qr-print-btn');if(qbtn)qbtn.dataset.printed='0';});
+
+
+// ════ V15 PATCH: AFTER REGISTRATION QR PRINT SHOW ONLY LOGO ════
+(function(){
+  function getLogoB64(){
+    return (typeof CWML_PRINTED_LOGO_V14 !== 'undefined' && CWML_PRINTED_LOGO_V14) ? CWML_PRINTED_LOGO_V14 : (typeof PRINTED_QR_LOGO_B64 !== 'undefined' ? PRINTED_QR_LOGO_B64 : '');
+  }
+  function qrGeneratedTitle(){
+    const area=document.getElementById('qr-result-area');
+    if(!area) return null;
+    return area.querySelector('.mb-2');
+  }
+  window.resetQrPrintedLogoPreview = function(){
+    tlposCurrentQrPrinted=false;
+    tlposCurrentQrIdForPrint=(typeof v14GetCurrentQrId==='function')?v14GetCurrentQrId():'';
+    const area=document.getElementById('qr-result-area');
+    const printArea=document.getElementById('print-area');
+    const title=qrGeneratedTitle();
+    const btn=document.getElementById('qr-print-btn');
+    ['printed-logo-preview-wrap','qr-printed-only-logo','v15-printed-logo-only'].forEach(id=>{const el=document.getElementById(id);if(el)el.remove();});
+    if(title) title.style.display='block';
+    if(printArea) printArea.style.display='flex';
+    const qb=document.getElementById('qrcode-box');
+    if(qb) qb.style.display='block';
+    if(btn){
+      btn.style.display='block';
+      btn.dataset.printed='0';
+      btn.classList.remove('printed-disabled');
+      btn.innerHTML='<i class="fas fa-print me-2"></i>PRINT QR CARD';
+    }
+    if(area) area.classList.remove('qr-only-logo-mode');
+  };
+  window.showQrPrintedLogoPreview = function(){
+    tlposCurrentQrPrinted=true;
+    tlposCurrentQrIdForPrint=(typeof v14GetCurrentQrId==='function')?v14GetCurrentQrId():'';
+    const area=document.getElementById('qr-result-area');
+    if(!area) return;
+    const title=qrGeneratedTitle();
+    const printArea=document.getElementById('print-area');
+    const btn=document.getElementById('qr-print-btn');
+    ['printed-logo-preview-wrap','qr-printed-only-logo','v15-printed-logo-only'].forEach(id=>{const el=document.getElementById(id);if(el)el.remove();});
+    if(title) title.style.display='none';
+    if(printArea) printArea.style.display='none';
+    if(btn){
+      btn.style.display='none';
+      btn.dataset.printed='1';
+      btn.classList.add('printed-disabled');
+    }
+    const holder=document.createElement('div');
+    holder.id='v15-printed-logo-only';
+    holder.className='qr-printed-only';
+    holder.innerHTML='<img src="data:image/png;base64,'+getLogoB64()+'" alt="Ceylon Weighing Machine Limited Logo">';
+    area.insertBefore(holder, area.firstChild);
+    area.classList.add('qr-only-logo-mode');
+  };
+  const previousPrintQR = window.printQR;
+  window.printQR = async function(){
+    const qrid=(typeof v14GetCurrentQrId==='function')?v14GetCurrentQrId():'';
+    if(tlposCurrentQrPrinted && qrid && qrid===tlposCurrentQrIdForPrint){
+      await Swal.fire('QR already printed','මෙම QR එක registration screen එකෙන් print කළ හැක්කේ එක් වතාවක් පමණයි. නැවත print අවශ්‍ය නම් Admin → Reprint QR page එක භාවිතා කරන්න.','info');
+      return;
+    }
+    try{
+      if(typeof previousPrintQR==='function') await previousPrintQR();
+      window.showQrPrintedLogoPreview();
+    }catch(e){
+      console.error(e);
+      Swal.fire('Print error',e.message||String(e),'error');
+    }
+  };
+})();
+
 </script>
 </body>
 </html>
