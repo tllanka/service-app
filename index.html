@@ -13,6 +13,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 :root{--p:#064C57;--pd:#032b31;--pl:#0a6b7a;--bg:#e0e5ec;--ac:#F59E0B;--sl:#ffffff;--sd:#b8bec5;}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -184,6 +186,16 @@ h4,h5,.stat-value,.reb,.keypad-btn{font-family:'Rajdhani',sans-serif;}
 .stamp-lock-note{font-size:10px;color:#64748b;font-weight:700;display:block;margin-top:5px;}
 .stamp-change-btn{border:none;background:transparent;color:#0a6b7a;font-weight:800;font-size:10px;padding:0;margin-left:6px;text-decoration:underline;}
 
+
+/* Area Map */
+.map-box{height:430px;border-radius:20px;overflow:hidden;box-shadow:inset 3px 3px 7px var(--sd),inset -3px -3px 7px var(--sl);background:#dbeafe;border:2px solid rgba(6,76,87,.18);}
+.map-mini-list{max-height:250px;overflow-y:auto;margin-top:12px;}
+.map-cust-card{background:var(--bg);border-left:4px solid var(--p);border-radius:13px;padding:10px 12px;margin-bottom:8px;box-shadow:3px 3px 7px var(--sd),-3px -3px 7px var(--sl);font-size:12px;}
+.map-cust-card b{color:var(--p);font-size:13px;}
+.map-stat-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0;}
+.map-stat{background:linear-gradient(135deg,#064C57,#0a6b7a);color:white;border-radius:14px;padding:10px;text-align:center;font-family:'Rajdhani',sans-serif;font-weight:700;}
+.map-stat small{display:block;font-family:'Inter',sans-serif;font-size:9px;opacity:.8;letter-spacing:1px;}
+
 @media print{
   body>*:not(#inv-print-area){display:none!important;}
   #inv-print-area{display:block!important;position:fixed;inset:0;background:white;z-index:99999;padding:16px;}
@@ -224,10 +236,35 @@ h4,h5,.stat-value,.reb,.keypad-btn{font-family:'Rajdhani',sans-serif;}
       <div class="col-6"><button class="qb" onclick="openAdmin()"><span class="qi">⚙️</span>Admin</button></div>
     </div>
   </div>
+  <button class="day-btn mb-3" style="background:linear-gradient(135deg,#064C57,#0a6b7a);" onclick="openAreaMapPage()">
+    <i class="fas fa-map-location-dot me-2"></i>🗺️ AREA MAP
+  </button>
   <!-- Daily Summary -->
   <button class="day-btn mb-3" onclick="generateDailySummary()">
     <i class="fas fa-calendar-day me-2"></i>📤 DAILY SUMMARY — SEND TODAY'S REPORT
   </button>
+</div>
+
+
+<!-- ══ AREA MAP PAGE ══ -->
+<div id="s-area-map" class="section">
+  <div class="mc">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="fw-bold mb-0" style="color:var(--p);letter-spacing:1px;">🗺️ AREA MAP</h6>
+      <button class="rebl" style="width:auto;padding:8px 13px;font-size:12px;" onclick="refreshAreaMap()"><i class="fas fa-rotate me-1"></i>Refresh</button>
+    </div>
+    <div class="fg">
+      <span class="fl">Admin Selected Area</span>
+      <select id="map-area-select" class="fs" onchange="refreshAreaMap()"></select>
+    </div>
+    <div class="map-stat-row">
+      <div class="map-stat"><span id="map-total-customers">0</span><small>CUSTOMERS</small></div>
+      <div class="map-stat"><span id="map-total-markers">0</span><small>GPS MARKERS</small></div>
+    </div>
+    <div id="area-map" class="map-box"></div>
+    <div class="map-mini-list" id="area-map-list"></div>
+    <small class="text-muted d-block mt-2" style="font-size:10px;line-height:1.5;">GPS තියෙන customer records විතරක් map එකේ marker ලෙස පෙන්වයි. Base map tiles පෙන්වීමට internet අවශ්‍යයි.</small>
+  </div>
 </div>
 
 <!-- ══ 2. REGISTER ══ -->
@@ -447,6 +484,7 @@ h4,h5,.stat-value,.reb,.keypad-btn{font-family:'Rajdhani',sans-serif;}
       <div class="fg"><span class="fl">📧 Report / Invoice Email Recipient</span><input type="email" id="adm-email" class="fc" placeholder="admin@example.com"></div>
       <div class="fg"><span class="fl">🏢 Company Name</span><input type="text" id="adm-company" class="fc" placeholder="Ceylon Weighing Machine Limited"></div>
       <div class="fg"><span class="fl">📞 Company Phone</span><input type="text" id="adm-cphone" class="fc" placeholder="+94 XX XXX XXXX"></div>
+      <div class="fg"><span class="fl">🗺️ Area Map Areas</span><div id="adm-areas-box" class="name-list-box"></div><small class="text-muted" style="font-size:10px;">Example: Pelmadulla, Embilipitiya. Customer registration city එක මේ names එක්ක match කළාම map filter වෙයි.</small></div>
       <div class="fg"><span class="fl">👮 Stamp Officers</span><div id="adm-officers-box" class="name-list-box"></div></div>
       <div class="fg"><span class="fl">👥 Team Leaders</span><div id="adm-leaders-box" class="name-list-box"></div></div>
       <div class="fg"><span class="fl">👤 Team Members</span><div id="adm-members-box" class="name-list-box"></div></div>
@@ -543,7 +581,7 @@ let stampSessionStarted=false;
 })();
 
 // ════ NAV ════
-const NM={'s-home':'n-home','s-stamp':'n-stamp','s-reg':'n-reg','s-list':'n-list','s-reports':'n-rpt'};
+const NM={'s-home':'n-home','s-stamp':'n-stamp','s-reg':'n-reg','s-list':'n-list','s-reports':'n-rpt','s-area-map':'n-home'};
 function navTo(id){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -562,6 +600,74 @@ function fetchGPS(){
     document.getElementById('gps-status').innerText="✅ "+gps;
   },()=>alert('Location permission needed'),{enableHighAccuracy:true});
 }
+
+// ════ AREA MAP ════
+function parseGPSPoint(g){
+  if(!g) return null;
+  const parts=String(g).split(',').map(x=>parseFloat(x.trim()));
+  if(parts.length<2 || !isFinite(parts[0]) || !isFinite(parts[1])) return null;
+  return {lat:parts[0], lng:parts[1]};
+}
+let areaMap=null, areaMarkers=[];
+function getAdminAreas(){
+  const saved=listFromStorage('tlpos_map_areas');
+  if(saved.length) return saved;
+  return SL_CITIES.filter((v,i,a)=>a.indexOf(v)===i).slice(0,80);
+}
+function fillAreaMapSelect(){
+  const sel=document.getElementById('map-area-select'); if(!sel) return;
+  const old=sel.value;
+  const areas=getAdminAreas();
+  sel.innerHTML='<option value="__ALL__">All Registered Areas</option>'+areas.map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join('');
+  if(old && [...sel.options].some(o=>o.value===old)) sel.value=old;
+}
+async function openAreaMapPage(){
+  navTo('s-area-map');
+  fillAreaMapSelect();
+  setTimeout(refreshAreaMap,250);
+}
+async function refreshAreaMap(){
+  const sel=document.getElementById('map-area-select'); if(!sel) return;
+  const area=sel.value||'__ALL__';
+  const customers=await db.customers.toArray();
+  const filtered=customers.filter(c=>{
+    if(area==='__ALL__') return true;
+    const city=(c.addr2||'').trim().toLowerCase();
+    return city===area.toLowerCase() || city.includes(area.toLowerCase());
+  });
+  const withGps=filtered.map(c=>({cust:c, pt:parseGPSPoint(c.gps)})).filter(x=>x.pt);
+  document.getElementById('map-total-customers').innerText=filtered.length;
+  document.getElementById('map-total-markers').innerText=withGps.length;
+
+  const list=document.getElementById('area-map-list');
+  if(list){
+    if(!filtered.length) list.innerHTML='<div class="text-center text-muted py-3" style="font-size:12px;">Selected area එකට customer records නැහැ.</div>';
+    else list.innerHTML=filtered.map(c=>{
+      const pt=parseGPSPoint(c.gps);
+      return `<div class="map-cust-card"><b>${esc(c.name||'-')}</b><br><span>${esc(shortAddress(c.addr1,c.addr2))}</span><br><small>${pt?'📍 '+esc(c.gps):'⚠️ GPS not saved'} &nbsp; | &nbsp; ${esc(c.phone||'')}</small></div>`;
+    }).join('');
+  }
+
+  if(typeof L==='undefined'){
+    Swal.fire('Map library not loaded','Internet connection තිබුණාම map tiles/library load වෙයි. Customer list එක පහළින් පෙන්වයි.','info');
+    return;
+  }
+  if(!areaMap){
+    areaMap=L.map('area-map',{zoomControl:true}).setView([7.8731,80.7718],7);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(areaMap);
+  }
+  areaMarkers.forEach(m=>areaMap.removeLayer(m)); areaMarkers=[];
+  if(!withGps.length){ areaMap.setView([7.8731,80.7718],7); setTimeout(()=>areaMap.invalidateSize(),120); return; }
+  const bounds=[];
+  withGps.forEach(({cust,pt})=>{
+    const marker=L.marker([pt.lat,pt.lng]).addTo(areaMap);
+    marker.bindPopup(`<b>${esc(cust.name||'-')}</b><br>${esc(shortAddress(cust.addr1,cust.addr2))}<br>Phone: ${esc(cust.phone||'-')}<br>GPS: ${esc(cust.gps||'-')}`);
+    areaMarkers.push(marker); bounds.push([pt.lat,pt.lng]);
+  });
+  if(bounds.length===1) areaMap.setView(bounds[0],15); else areaMap.fitBounds(bounds,{padding:[25,25]});
+  setTimeout(()=>areaMap.invalidateSize(),160);
+}
+
 
 // ════ CITY SUGGESTIONS ════
 function citySuggest(inp, dropId){
@@ -1200,6 +1306,16 @@ function printInvoice(){
 .stamp-lock-note{font-size:10px;color:#64748b;font-weight:700;display:block;margin-top:5px;}
 .stamp-change-btn{border:none;background:transparent;color:#0a6b7a;font-weight:800;font-size:10px;padding:0;margin-left:6px;text-decoration:underline;}
 
+
+/* Area Map */
+.map-box{height:430px;border-radius:20px;overflow:hidden;box-shadow:inset 3px 3px 7px var(--sd),inset -3px -3px 7px var(--sl);background:#dbeafe;border:2px solid rgba(6,76,87,.18);}
+.map-mini-list{max-height:250px;overflow-y:auto;margin-top:12px;}
+.map-cust-card{background:var(--bg);border-left:4px solid var(--p);border-radius:13px;padding:10px 12px;margin-bottom:8px;box-shadow:3px 3px 7px var(--sd),-3px -3px 7px var(--sl);font-size:12px;}
+.map-cust-card b{color:var(--p);font-size:13px;}
+.map-stat-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0;}
+.map-stat{background:linear-gradient(135deg,#064C57,#0a6b7a);color:white;border-radius:14px;padding:10px;text-align:center;font-family:'Rajdhani',sans-serif;font-weight:700;}
+.map-stat small{display:block;font-family:'Inter',sans-serif;font-size:9px;opacity:.8;letter-spacing:1px;}
+
 @media print{.print-btn{display:none!important;}}
     </style></head><body>
     ${html}
@@ -1441,6 +1557,7 @@ function idbGet(key){return new Promise((res,rej)=>{const rq=indexedDB.open('TLp
 
 // ════ ADMIN SMALL NAME LIST EDITORS ════
 const nameEditorMap={
+  areas:{box:'adm-areas-box', storage:'tlpos_map_areas', placeholder:'Area name'},
   officers:{box:'adm-officers-box', storage:'tlpos_stamp_officers', placeholder:'Officer name'},
   leaders:{box:'adm-leaders-box', storage:'tlpos_stamp_leaders', placeholder:'Team leader name'},
   members:{box:'adm-members-box', storage:'tlpos_stamp_members', placeholder:'Member name'}
@@ -1470,6 +1587,7 @@ function saveNameEditorsToStorage(){
   Object.keys(nameEditorMap).forEach(k=>{localStorage.setItem(nameEditorMap[k].storage, getNameEditorValues(k).join('\n'));});
 }
 function loadNameEditorsFromStorage(){
+  renderNameEditor('areas', listFromStorage('tlpos_map_areas'));
   renderNameEditor('officers', listFromStorage('tlpos_stamp_officers'));
   renderNameEditor('leaders', listFromStorage('tlpos_stamp_leaders'));
   renderNameEditor('members', listFromStorage('tlpos_stamp_members'));
@@ -1501,6 +1619,7 @@ function saveAdmSettings(){
   localStorage.setItem('tlpos_company',document.getElementById('adm-company').value||'Ceylon Weighing Machine Limited');
   localStorage.setItem('tlpos_cphone',document.getElementById('adm-cphone').value);
   saveNameEditorsToStorage();
+  fillAreaMapSelect();
   autoBackupNow('settings');
   Swal.fire('✅ Saved','Settings saved','success');
 }
