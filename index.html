@@ -212,6 +212,32 @@ h4,h5,.stat-value,.reb,.keypad-btn{font-family:'Rajdhani',sans-serif;}
 .tlpos-mini-pop .pop-lbl{color:#64748b;font-weight:700;min-width:42px;}
 .tlpos-mini-pop .pop-status{margin-top:6px;padding:5px 7px;border-radius:8px;font-weight:800;font-size:10px;background:#f8fafc;}
 
+
+/* Report tables */
+.rpt-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;}
+.rpt-title{font-weight:900;color:var(--p);letter-spacing:1px;font-size:15px;}
+.rpt-tabs{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin:12px 0 14px;}
+.rpt-tab{background:var(--bg);border:none;border-radius:14px;padding:12px 8px;font-family:'Rajdhani',sans-serif;font-weight:800;color:var(--p);box-shadow:4px 4px 9px var(--sd),-4px -4px 9px var(--sl);letter-spacing:.5px;cursor:pointer;}
+.rpt-tab.active{background:linear-gradient(135deg,#064C57,#0a6b7a);color:white;box-shadow:inset 2px 2px 5px rgba(0,0,0,.22),-2px -2px 6px rgba(255,255,255,.35);}
+.rpt-sum-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+.rpt-sum{background:linear-gradient(145deg,#ffffff,#e8edf4);border-radius:14px;padding:10px;text-align:center;box-shadow:3px 3px 8px var(--sd),-3px -3px 8px var(--sl);border:1px solid rgba(6,76,87,.08);}
+.rpt-sum b{display:block;font-family:'Rajdhani',sans-serif;font-size:20px;color:var(--p);line-height:1;}
+.rpt-sum small{font-size:8px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:.7px;}
+.rpt-table-wrap{border:2px solid #064C57;border-radius:16px;overflow:hidden;background:white;box-shadow:0 8px 24px rgba(6,76,87,.16);}
+.rpt-scroll{overflow:auto;max-height:470px;}
+.rpt-table{width:100%;border-collapse:separate;border-spacing:0;min-width:760px;font-size:12px;background:white;}
+.rpt-table thead th{position:sticky;top:0;z-index:2;background:#064C57;color:white;border:1px solid #064C57;padding:10px 9px;white-space:nowrap;font-size:10px;text-transform:uppercase;letter-spacing:.7px;}
+.rpt-table tbody td{border-right:1px solid #0a6b7a;border-bottom:1px solid #0a6b7a;padding:9px 8px;vertical-align:top;color:#1f2937;}
+.rpt-table tbody tr:nth-child(even){background:#f0fafb;}
+.rpt-table tbody tr:hover{background:#fff7ed;}
+.rpt-pill{display:inline-block;border-radius:999px;padding:3px 8px;font-size:10px;font-weight:900;color:white;white-space:nowrap;}
+.rpt-pill.stamp{background:#10b981;}.rpt-pill.unstamp{background:#dc2626;}.rpt-pill.service{background:#f97316;}.rpt-pill.info{background:#0a6b7a;}
+.rpt-empty{text-align:center;padding:26px 12px;color:#64748b;font-weight:700;font-size:13px;background:#f8fafc;border-radius:0 0 14px 14px;}
+.rpt-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px;}
+.rpt-small-btn{border:none;border-radius:13px;padding:11px 8px;font-family:'Rajdhani',sans-serif;font-weight:900;letter-spacing:.6px;cursor:pointer;}
+.rpt-small-btn.green{background:linear-gradient(135deg,#10b981,#059669);color:white;}.rpt-small-btn.blue{background:linear-gradient(135deg,#064C57,#0a6b7a);color:white;}
+@media(max-width:430px){.rpt-tabs{grid-template-columns:repeat(2,1fr)}.rpt-sum-grid{grid-template-columns:repeat(3,1fr)}.rpt-title{font-size:13px}.rpt-table{min-width:720px;font-size:11px}}
+
 @media print{
   body>*:not(#inv-print-area){display:none!important;}
   #inv-print-area{display:block!important;position:fixed;inset:0;background:white;z-index:99999;padding:16px;}
@@ -471,16 +497,41 @@ h4,h5,.stat-value,.reb,.keypad-btn{font-family:'Rajdhani',sans-serif;}
 <!-- ══ 7. REPORTS ══ -->
 <div id="s-reports" class="section">
   <div class="mc">
-    <h6 class="fw-bold mb-3" style="color:var(--p);">📊 Report Export</h6>
-    <div class="row g-2 mb-4">
-      <div class="col-6"><input type="date" id="rpt-from" class="fc"></div>
-      <div class="col-6"><input type="date" id="rpt-to" class="fc"></div>
+    <div class="rpt-head">
+      <div>
+        <div class="rpt-title">📊 REPORT CENTER</div>
+        <small class="text-muted" style="font-size:10px;font-weight:700;">All reports are shown inside clean dark-green tables</small>
+      </div>
+      <button class="rebl" style="width:auto;padding:9px 13px;font-size:12px;" onclick="renderReportTables()"><i class="fas fa-rotate me-1"></i>Refresh</button>
     </div>
-    <div class="d-grid gap-3">
-      <button class="rebl py-3 text-start" onclick="exportData('service')"><i class="fas fa-file-invoice-dollar me-2" style="color:#f97316;"></i>Service Report</button>
-      <button class="rebl py-3 text-start" onclick="exportData('stamp')"><i class="fas fa-calendar-check me-2" style="color:#10b981;"></i>Stamp Report</button>
-      <button class="rebl py-3 text-start" onclick="exportData('invoices')"><i class="fas fa-receipt me-2" style="color:#0a6b7a;"></i>Invoice History</button>
-      <button class="rebl py-3 text-start" onclick="exportData('customers')"><i class="fas fa-users me-2" style="color:#8b5cf6;"></i>Full Customer List</button>
+
+    <div class="row g-2 mb-2">
+      <div class="col-6"><span class="fl">From</span><input type="date" id="rpt-from" class="fc" onchange="renderReportTables()"></div>
+      <div class="col-6"><span class="fl">To</span><input type="date" id="rpt-to" class="fc" onchange="renderReportTables()"></div>
+    </div>
+    <div class="fg mb-2"><span class="fl">Search</span><input type="text" id="rpt-search" class="fc" placeholder="Name / phone / serial / area..." oninput="renderReportTables()"></div>
+
+    <div class="rpt-tabs">
+      <button class="rpt-tab active" id="rt-service" onclick="setReportType('service')"><i class="fas fa-screwdriver-wrench me-1"></i>Service</button>
+      <button class="rpt-tab" id="rt-stamp" onclick="setReportType('stamp')"><i class="fas fa-stamp me-1"></i>Stamp</button>
+      <button class="rpt-tab" id="rt-invoices" onclick="setReportType('invoices')"><i class="fas fa-receipt me-1"></i>Invoices</button>
+      <button class="rpt-tab" id="rt-customers" onclick="setReportType('customers')"><i class="fas fa-users me-1"></i>Customers</button>
+    </div>
+
+    <div class="rpt-sum-grid">
+      <div class="rpt-sum"><b id="rpt-total">0</b><small>Records</small></div>
+      <div class="rpt-sum"><b id="rpt-stamp-total">0</b><small>Stamp</small></div>
+      <div class="rpt-sum"><b id="rpt-amount-total">0</b><small>Amount</small></div>
+    </div>
+
+    <div class="rpt-table-wrap">
+      <div id="rpt-table-title" style="background:#064C57;color:white;font-weight:900;padding:10px 12px;font-size:12px;letter-spacing:1px;">SERVICE REPORT</div>
+      <div class="rpt-scroll" id="rpt-table-box"></div>
+    </div>
+
+    <div class="rpt-actions">
+      <button class="rpt-small-btn green" onclick="exportData(activeReportType)"><i class="fas fa-file-excel me-1"></i>Export Excel</button>
+      <button class="rpt-small-btn blue" onclick="printReportTable()"><i class="fas fa-print me-1"></i>Print Table</button>
     </div>
   </div>
 </div>
@@ -606,7 +657,9 @@ function navTo(id){
   document.getElementById('pg-title').innerText=id.split('-')[1].toUpperCase();
   if(id!=='s-scan') stopScanner();
   updateStats();
+  if(id==='s-reports') setTimeout(renderReportTables,80);
 }
+
 
 // ════ GPS ════
 function fetchGPS(){
@@ -1414,6 +1467,32 @@ function printInvoice(){
 .tlpos-mini-pop .pop-lbl{color:#64748b;font-weight:700;min-width:42px;}
 .tlpos-mini-pop .pop-status{margin-top:6px;padding:5px 7px;border-radius:8px;font-weight:800;font-size:10px;background:#f8fafc;}
 
+
+/* Report tables */
+.rpt-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;}
+.rpt-title{font-weight:900;color:var(--p);letter-spacing:1px;font-size:15px;}
+.rpt-tabs{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin:12px 0 14px;}
+.rpt-tab{background:var(--bg);border:none;border-radius:14px;padding:12px 8px;font-family:'Rajdhani',sans-serif;font-weight:800;color:var(--p);box-shadow:4px 4px 9px var(--sd),-4px -4px 9px var(--sl);letter-spacing:.5px;cursor:pointer;}
+.rpt-tab.active{background:linear-gradient(135deg,#064C57,#0a6b7a);color:white;box-shadow:inset 2px 2px 5px rgba(0,0,0,.22),-2px -2px 6px rgba(255,255,255,.35);}
+.rpt-sum-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+.rpt-sum{background:linear-gradient(145deg,#ffffff,#e8edf4);border-radius:14px;padding:10px;text-align:center;box-shadow:3px 3px 8px var(--sd),-3px -3px 8px var(--sl);border:1px solid rgba(6,76,87,.08);}
+.rpt-sum b{display:block;font-family:'Rajdhani',sans-serif;font-size:20px;color:var(--p);line-height:1;}
+.rpt-sum small{font-size:8px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:.7px;}
+.rpt-table-wrap{border:2px solid #064C57;border-radius:16px;overflow:hidden;background:white;box-shadow:0 8px 24px rgba(6,76,87,.16);}
+.rpt-scroll{overflow:auto;max-height:470px;}
+.rpt-table{width:100%;border-collapse:separate;border-spacing:0;min-width:760px;font-size:12px;background:white;}
+.rpt-table thead th{position:sticky;top:0;z-index:2;background:#064C57;color:white;border:1px solid #064C57;padding:10px 9px;white-space:nowrap;font-size:10px;text-transform:uppercase;letter-spacing:.7px;}
+.rpt-table tbody td{border-right:1px solid #0a6b7a;border-bottom:1px solid #0a6b7a;padding:9px 8px;vertical-align:top;color:#1f2937;}
+.rpt-table tbody tr:nth-child(even){background:#f0fafb;}
+.rpt-table tbody tr:hover{background:#fff7ed;}
+.rpt-pill{display:inline-block;border-radius:999px;padding:3px 8px;font-size:10px;font-weight:900;color:white;white-space:nowrap;}
+.rpt-pill.stamp{background:#10b981;}.rpt-pill.unstamp{background:#dc2626;}.rpt-pill.service{background:#f97316;}.rpt-pill.info{background:#0a6b7a;}
+.rpt-empty{text-align:center;padding:26px 12px;color:#64748b;font-weight:700;font-size:13px;background:#f8fafc;border-radius:0 0 14px 14px;}
+.rpt-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px;}
+.rpt-small-btn{border:none;border-radius:13px;padding:11px 8px;font-family:'Rajdhani',sans-serif;font-weight:900;letter-spacing:.6px;cursor:pointer;}
+.rpt-small-btn.green{background:linear-gradient(135deg,#10b981,#059669);color:white;}.rpt-small-btn.blue{background:linear-gradient(135deg,#064C57,#0a6b7a);color:white;}
+@media(max-width:430px){.rpt-tabs{grid-template-columns:repeat(2,1fr)}.rpt-sum-grid{grid-template-columns:repeat(3,1fr)}.rpt-title{font-size:13px}.rpt-table{min-width:720px;font-size:11px}}
+
 @media print{.print-btn{display:none!important;}}
     </style></head><body>
     ${html}
@@ -1571,18 +1650,97 @@ async function updateStats(){
 }
 
 // ════ EXPORT ════
+
+let activeReportType='service';
+let lastReportRows=[];
+function shortDateTime(v){try{return v?new Date(v).toLocaleString([], {month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'-';}catch(e){return v||'-';}}
+function money(v){const n=Number(v||0);return isFinite(n)?n.toLocaleString():String(v||'0');}
+function parseScaleJSON(v){try{return typeof v==='string'?JSON.parse(v||'{}'):(v||{});}catch(e){return {};}}
+function shortAddr(a,b){return [a,b].filter(Boolean).join(', ');}
+function reportMatch(row,q){if(!q)return true; q=q.toLowerCase(); return Object.values(row).some(v=>String(v??'').toLowerCase().includes(q));}
+function setReportType(t){activeReportType=t; document.querySelectorAll('.rpt-tab').forEach(b=>b.classList.remove('active')); const el=document.getElementById('rt-'+t); if(el)el.classList.add('active'); renderReportTables();}
+async function getReportRows(type){
+  const from=document.getElementById('rpt-from')?.value||'', to=document.getElementById('rpt-to')?.value||'';
+  let rows=[];
+  if(type==='customers'){
+    const customers=await db.customers.toArray();
+    rows=customers.map(c=>({
+      'Customer Name':c.name||'-','Phone':c.phone||'-','NIC':c.nic||'-','Address':shortAddr(c.addr1,c.addr2)||'-','Area':c.addr2||'-','GPS':c.gps||'-','Scales':Array.isArray(c.scales)?c.scales.length:0,'QR ID':c.qr_id||'-'
+    }));
+  }else if(type==='invoices'){
+    let inv=await db.invoices.toArray();
+    if(from) inv=inv.filter(x=>(x.date||'')>=from); if(to) inv=inv.filter(x=>(x.date||'')<=to+'T23:59');
+    rows=inv.map(x=>({
+      'Time':shortDateTime(x.date),'Invoice No':x.inv_no||'-','Customer Name':x.cust_name||'-','Phone':x.phone||'-','Model':x.model||'-','Serial':x.serial||'-','KG':x.weight||'-','Amount':money(x.amount),'Notes':x.notes||'-'
+    }));
+  }else{
+    let logs=await db.logs.toArray();
+    logs=logs.filter(l=>type==='stamp'?l.type==='Stamp':l.type==='Service');
+    if(from) logs=logs.filter(l=>(l.date||'')>=from); if(to) logs=logs.filter(l=>(l.date||'')<=to+'T23:59');
+    if(type==='stamp') rows=logs.map(l=>{const sc=parseScaleJSON(l.stamp_scales);return {
+      'Time':shortDateTime(l.date),'Customer Name':l.cust_name||'-','Address':shortAddr(l.addr1,l.addr2)||'-','Area':l.area||l.addr2||'-','Scale Model':sc.model||'-','Serial No':sc.serial||'-','KG':sc.weight||'-','Status':l.status||sc.status||'STAMP','Officer':l.officer||'-','Leader':l.leader||'-','Member':l.member||'-','Note':l.notes||'-'
+    }});
+    else rows=logs.map(l=>({
+      'Time':shortDateTime(l.date),'Customer Name':l.cust_name||'-','Type':l.type||'Service','Amount':money(l.amount),'Notes':l.notes||'-'
+    }));
+  }
+  const q=document.getElementById('rpt-search')?.value||'';
+  return rows.filter(r=>reportMatch(r,q));
+}
+function reportColumns(type){
+  return {
+    service:['Time','Customer Name','Type','Amount','Notes'],
+    stamp:['Time','Customer Name','Address','Area','Scale Model','Serial No','KG','Status','Officer','Leader','Member','Note'],
+    invoices:['Time','Invoice No','Customer Name','Phone','Model','Serial','KG','Amount','Notes'],
+    customers:['Customer Name','Phone','NIC','Address','Area','GPS','Scales','QR ID']
+  }[type]||[];
+}
+async function renderReportTables(){
+  const box=document.getElementById('rpt-table-box'); if(!box) return;
+  const rows=await getReportRows(activeReportType); lastReportRows=rows;
+  const cols=reportColumns(activeReportType);
+  const titleMap={service:'SERVICE REPORT',stamp:'STAMP REPORT',invoices:'INVOICE HISTORY',customers:'FULL CUSTOMER LIST'};
+  const title=document.getElementById('rpt-table-title'); if(title)title.innerText=titleMap[activeReportType]||'REPORT';
+  document.getElementById('rpt-total').innerText=rows.length;
+  document.getElementById('rpt-stamp-total').innerText=activeReportType==='stamp'?rows.filter(r=>String(r.Status).toUpperCase()==='STAMP').length:'-';
+  const amt=rows.reduce((a,r)=>a+(Number(String(r.Amount||0).replace(/,/g,''))||0),0);
+  document.getElementById('rpt-amount-total').innerText=(activeReportType==='service'||activeReportType==='invoices')?amt.toLocaleString():'-';
+  if(!rows.length){box.innerHTML='<div class="rpt-empty">No records found for selected report/date/search.</div>';return;}
+  const th=cols.map(c=>`<th>${esc(c)}</th>`).join('');
+  const body=rows.map(r=>`<tr>${cols.map(c=>{
+    let v=r[c]??'-';
+    if(c==='Status'){const cls=String(v).toUpperCase()==='UN STAMP'?'unstamp':'stamp'; v=`<span class="rpt-pill ${cls}">${esc(v)}</span>`;}
+    else if(c==='Type'){v=`<span class="rpt-pill service">${esc(v)}</span>`;}
+    else if(c==='Scales'){v=`<span class="rpt-pill info">${esc(v)}</span>`;}
+    else v=esc(v);
+    return `<td>${v}</td>`;
+  }).join('')}</tr>`).join('');
+  box.innerHTML=`<table class="rpt-table"><thead><tr>${th}</tr></thead><tbody>${body}</tbody></table>`;
+}
 async function exportData(type){
-  const from=document.getElementById('rpt-from').value,to=document.getElementById('rpt-to').value;
-  let data;
-  if(type==='customers') data=await db.customers.toArray();
-  else if(type==='invoices') data=await db.invoices.toArray();
-  else data=await db.logs.toArray();
-  if(from&&type!=='customers') data=data.filter(l=>(l.date||'')>=from);
-  if(to&&type!=='customers') data=data.filter(l=>(l.date||'')<=to+'T23:59');
-  if(!data.length) return Swal.fire('No Data','No records found.','info');
-  const ws=XLSX.utils.json_to_sheet(data);
-  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Records');
-  xlsxDownload(wb,`TLpos_${type}_Report.xlsx`);
+  if(type) activeReportType=type;
+  const rows=await getReportRows(activeReportType);
+  if(!rows.length) return Swal.fire('No Data','No records found.','info');
+  const ws=XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=Object.keys(rows[0]).map(k=>({wch:Math.max(12,Math.min(28,k.length+8))}));
+  if(typeof XLSXStyle!=='undefined' && XLSXStyle.writeFile){
+    const range=XLSX.utils.decode_range(ws['!ref']);
+    for(let C=range.s.c;C<=range.e.c;C++){
+      const cell=ws[XLSX.utils.encode_cell({r:0,c:C})];
+      if(cell) cell.s={font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'064C57'}},alignment:{horizontal:'center'},border:{top:{style:'thin',color:{rgb:'064C57'}},bottom:{style:'thin',color:{rgb:'064C57'}},left:{style:'thin',color:{rgb:'064C57'}},right:{style:'thin',color:{rgb:'064C57'}}}};
+    }
+    for(let R=1;R<=range.e.r;R++)for(let C=range.s.c;C<=range.e.c;C++){const cell=ws[XLSX.utils.encode_cell({r:R,c:C})]; if(cell) cell.s={border:{top:{style:'thin',color:{rgb:'064C57'}},bottom:{style:'thin',color:{rgb:'064C57'}},left:{style:'thin',color:{rgb:'064C57'}},right:{style:'thin',color:{rgb:'064C57'}}}};}
+    const wb=XLSXStyle.utils.book_new();XLSXStyle.utils.book_append_sheet(wb,ws,'Report');XLSXStyle.writeFile(wb,`TLpos_${activeReportType}_Report.xlsx`); return;
+  }
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Report');
+  xlsxDownload(wb,`TLpos_${activeReportType}_Report.xlsx`);
+}
+function printReportTable(){
+  const box=document.getElementById('rpt-table-box'); if(!box||!box.innerHTML.trim())return;
+  const title=document.getElementById('rpt-table-title')?.innerText||'REPORT';
+  const w=window.open('','_blank');
+  w.document.write(`<html><head><title>${title}</title><style>body{font-family:Arial;padding:18px}h2{color:#064C57}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#064C57;color:white;padding:8px;border:1px solid #064C57}td{padding:7px;border:1px solid #064C57}tr:nth-child(even){background:#f0fafb}</style></head><body><h2>${title}</h2>${box.innerHTML}</body></html>`);
+  w.document.close();w.focus();setTimeout(()=>w.print(),400);
 }
 async function makeBackupObject(){
   const c=await db.customers.toArray(), l=await db.logs.toArray(), i=await db.invoices.toArray();
